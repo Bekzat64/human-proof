@@ -8,6 +8,8 @@ export type ApiErrorCode =
   | "no_identity"
   | "not_found"
   | "not_active"
+  | "own_attempt"
+  | "already_recorded"
   | "message_limit"
   | "copilot_unavailable";
 
@@ -16,6 +18,8 @@ const STATUS: Record<ApiErrorCode, number> = {
   no_identity: 401,
   not_found: 404,
   not_active: 409,
+  own_attempt: 403,
+  already_recorded: 409,
   message_limit: 429,
   copilot_unavailable: 503,
 };

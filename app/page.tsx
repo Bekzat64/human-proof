@@ -68,7 +68,7 @@ export default function Home() {
       </main>
 
       <footer className="py-6 text-sm text-muted-foreground">
-        Early build: the simulation works end to end; grading and the public Proof page are next.
+        Early build: the simulation, grading and the public Proof page work end to end.
       </footer>
     </div>
   );

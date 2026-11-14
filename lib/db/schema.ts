@@ -7,6 +7,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // Enum-like columns are plain `text` with a TS-level enum: fully typed in
@@ -76,11 +77,15 @@ export const feedback = pgTable(
       .notNull()
       .references(() => attempts.id, { onDelete: "cascade" }),
     source: text("source", { enum: FEEDBACK_SOURCES }).notNull(),
+    anonId: text("anon_id"), // who left it; one row per visitor, attempt and source
     kind: text("kind").notNull(),
     value: jsonb("value"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("feedback_attempt_idx").on(t.attemptId)],
+  (t) => [
+    index("feedback_attempt_idx").on(t.attemptId),
+    uniqueIndex("feedback_once_idx").on(t.attemptId, t.source, t.anonId),
+  ],
 );
 
 /** Job-Search Pass purchases (Stripe Checkout, verified on the return URL). */
