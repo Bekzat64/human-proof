@@ -44,8 +44,20 @@ export type FlagStats = {
   falseFlags: number;
   /** Flags on model-written replies that carried no seeded claim. Not judged: a model can be wrong unprompted. */
   otherFlags: number;
+  /** Copilot replies that carried no seeded claim. */
+  plainReplies: number;
+  /**
+   * Most replies without a seeded claim were flagged: flagging as a habit,
+   * not a judgment. When true, flags earn nothing on any trap.
+   */
+  indiscriminate: boolean;
   precision: number;
 };
+
+/** Flagging more than this share of the replies that carried no seeded claim counts as indiscriminate. */
+export const INDISCRIMINATE_FLAG_SHARE = 0.5;
+/** …but one stray flag on a short conversation is not a habit. */
+const MIN_PLAIN_FLAGS_FOR_INDISCRIMINATE = 2;
 
 /**
  * What the candidate flagged. A flag on a reply without a seeded claim is a
@@ -72,10 +84,20 @@ export function flagStats(events: readonly LoggedEvent[]): FlagStats {
     else if (reply?.source === "offline") falseFlags++;
   }
   const judged = onClaims + falseFlags;
+  // Whoever wrote them (model or offline copilot), flags on most of the
+  // replies that carried no seeded claim mean the flag button is being used
+  // on everything. Measured against those replies only, so a candidate who
+  // flags exactly the seeded mistakes is never caught by this.
+  const plainReplies = [...replies.values()].filter((r) => !r.trapId).length;
+  const plainFlags = flagged.size - onClaims;
+  const indiscriminate =
+    plainFlags >= MIN_PLAIN_FLAGS_FOR_INDISCRIMINATE && plainFlags > plainReplies * INDISCRIMINATE_FLAG_SHARE;
   return {
     flags: flagged.size,
     falseFlags,
     otherFlags: flagged.size - judged,
+    plainReplies,
+    indiscriminate,
     precision: judged === 0 ? 1 : onClaims / judged,
   };
 }
@@ -107,7 +129,8 @@ export function gradeTraps(variant: Variant, answer: Answer, events: readonly Lo
     T3: `${truth.drivingChannel} had the largest churn-rate increase.`,
   };
 
-  const { precision } = flagStats(events);
+  const { precision, indiscriminate } = flagStats(events);
+  const flagWeight = indiscriminate ? 0 : precision;
   const exposedCount = shownIn.size;
   const max = exposedCount === 0 ? 0 : WEIGHTS.aiJudgment / exposedCount;
 
@@ -132,7 +155,7 @@ export function gradeTraps(variant: Variant, answer: Answer, events: readonly Lo
       flagged,
       avoided: exposed && avoided[id],
       outcome,
-      points: exposed ? round1(max * ((avoided[id] ? AVOIDED_SHARE : 0) + (flagged ? FLAGGED_SHARE * precision : 0))) : 0,
+      points: exposed ? round1(max * ((avoided[id] ? AVOIDED_SHARE : 0) + (flagged ? FLAGGED_SHARE * flagWeight : 0))) : 0,
       max: exposed ? round1(max) : 0,
     };
   });

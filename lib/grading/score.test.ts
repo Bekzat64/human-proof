@@ -82,8 +82,9 @@ describe("scoring v1", () => {
     expect(score.dimensions.correctness.score).toBe(0);
   });
 
-  it("3c. flagging everything earns materially less than flagging precisely", () => {
-    const plainReplies = 3;
+  it("3c. flagging wrongly earns materially less than flagging precisely; flagging everything earns nothing", () => {
+    // Six plain replies, three of them flagged: exactly half, so precision applies, not the indiscriminate rule.
+    const plainReplies = 6;
     const precise = scoreAttempt({ variant, answer: follower, events: session({ plainReplies, flags: ["m1", "m2", "m3"] }) });
     const everything = scoreAttempt({
       variant,
@@ -98,13 +99,23 @@ describe("scoring v1", () => {
     expect(everything.integrityNotes.join(" ")).toContain("Flagged 3 correct answers as wrong");
     expect(precise.integrityNotes.join(" ")).not.toContain("correct answer");
 
+    expect(everything.dimensions.aiJudgment.indiscriminateFlags).toBe(false);
+
     // The answer share is untouched by precision: only the flag credit shrinks.
     const careful = scoreAttempt({ variant, answer: perfect, events: session({ plainReplies, flags: ["m1", "p1"] }) });
     expect(careful.traps.map((t) => t.points)).toEqual([8, 6, 6]); // T1: 6 + 4 × 0.5
+
+    // Flag every reply: indiscriminate, so the flag share is zero everywhere.
+    const all = scoreAttempt({
+      variant,
+      answer: follower,
+      events: session({ plainReplies, flags: ["m1", "m2", "m3", "p1", "p2", "p3", "p4", "p5", "p6"] }),
+    });
+    expect(all.dimensions.aiJudgment.score).toBe(0);
   });
 
   it("3e. flags on model-written replies are neutral: counted, not penalised", () => {
-    const plainReplies = 3;
+    const plainReplies = 6;
     const flags = ["m1", "m2", "m3", "p1", "p2", "p3"];
     const offline = scoreAttempt({ variant, answer: follower, events: session({ plainReplies, flags }) });
     const llm = scoreAttempt({ variant, answer: follower, events: session({ plainReplies, flags, plainSource: "llm" }) });
@@ -116,6 +127,34 @@ describe("scoring v1", () => {
     expect(notes).toContain("Flagged 3 other replies.");
     expect(notes).not.toContain("correct answer");
     expect(notes).not.toContain("reduced the credit");
+  });
+
+  it("3f. flagging most plain replies is indiscriminate: no flag credit on any trap, with a note", () => {
+    const plainReplies = 4;
+    // 3 of 4 plain replies flagged (model-written, so precision alone would not catch it).
+    const spam = scoreAttempt({
+      variant,
+      answer: follower,
+      events: session({ plainReplies, plainSource: "llm", flags: ["m1", "m2", "m3", "p1", "p2", "p3"] }),
+    });
+    expect(spam.dimensions.aiJudgment).toMatchObject({ score: 0, indiscriminateFlags: true, flagPrecision: 1 });
+    expect(spam.traps.map((t) => t.outcome)).toEqual(Array(3).fill("caught_by_flag")); // still recorded as flagged
+    expect(spam.integrityNotes.join(" ")).toContain("Flagged most replies (indiscriminate)");
+
+    // Half or fewer of the plain replies flagged: not indiscriminate.
+    const some = scoreAttempt({
+      variant,
+      answer: follower,
+      events: session({ plainReplies, plainSource: "llm", flags: ["m1", "m2", "m3", "p1", "p2"] }),
+    });
+    expect(some.dimensions.aiJudgment).toMatchObject({ score: 12, indiscriminateFlags: false });
+
+    // Flagging exactly the seeded mistakes is never indiscriminate, however short the chat.
+    const precise = scoreAttempt({ variant, answer: perfect, events: session({ flags: ["m1", "m2", "m3"] }) });
+    expect(precise.dimensions.aiJudgment).toMatchObject({ score: 30, indiscriminateFlags: false });
+    // One stray flag on a one-reply chat is not a habit either.
+    const stray = scoreAttempt({ variant, answer: perfect, events: session({ plainReplies: 1, flags: ["m1", "p1"] }) });
+    expect(stray.dimensions.aiJudgment.indiscriminateFlags).toBe(false);
   });
 
   it("3d. only a sort, filter or download counts as inspecting the data", () => {

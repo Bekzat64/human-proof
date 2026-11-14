@@ -77,7 +77,17 @@ export default function Home() {
       </main>
 
       <footer className="py-6 text-sm text-muted-foreground">
-        Early build: the simulation, grading and the public Proof page work end to end.
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <span>Early build: the simulation, drill, grading and proof pages work end to end.</span>
+          <nav className="flex gap-5">
+            <Link href="/stats" className="hover:text-foreground">
+              Stats
+            </Link>
+            <Link href="/pricing" className="hover:text-foreground">
+              Pricing
+            </Link>
+          </nav>
+        </div>
       </footer>
     </div>
   );

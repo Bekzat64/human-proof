@@ -46,6 +46,14 @@ export function ProofShell({
         HUMAN PROOF is a 15-minute analyst work simulation. The AI copilot in it is deliberately seeded
         with mistakes; this page records which ones were caught. No account is involved: a proof is
         tied to the browser that took the simulation.
+        <nav className="flex gap-5 pt-4">
+          <Link href="/stats" className="hover:text-foreground">
+            Stats
+          </Link>
+          <Link href="/pricing" className="hover:text-foreground">
+            Pricing
+          </Link>
+        </nav>
       </footer>
     </div>
   );

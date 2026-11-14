@@ -29,6 +29,7 @@ export function DimensionBars({ score }: { score: Score }) {
           : `Caught ${aiJudgment.caught} of ${aiJudgment.exposed} AI mistakes shown.`}
         {wrongFlags > 0 &&
           ` Also flagged ${wrongFlags} correct ${wrongFlags === 1 ? "answer" : "answers"} as wrong, which lowers the credit for flags.`}
+        {aiJudgment.indiscriminateFlags && " Flagged most replies, so flags earned no credit."}
         {neutralFlags > 0 && ` Flagged ${neutralFlags} other ${neutralFlags === 1 ? "reply" : "replies"}.`}
       </Bar>
       <Bar

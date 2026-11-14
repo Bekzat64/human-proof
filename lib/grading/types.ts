@@ -74,6 +74,8 @@ export type Score = {
       falseFlags?: number;
       /** Flagged model-written replies that carried no seeded claim. Neutral: not judged. */
       otherFlags?: number;
+      /** True when most replies without a seeded claim were flagged; flag credit is then zero. */
+      indiscriminateFlags?: boolean;
       /** Flags on seeded claims ÷ (those + falseFlags); 1 when neither. Scales the flag credit. */
       flagPrecision?: number;
     };

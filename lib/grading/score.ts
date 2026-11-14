@@ -52,6 +52,7 @@ export function scoreAttempt(input: ScoringInput, rubric?: RubricCore | null): S
     falseFlags: flags.falseFlags,
     otherFlags: flags.otherFlags,
     flagPrecision: Math.round(flags.precision * 100) / 100,
+    indiscriminateFlags: flags.indiscriminate,
   };
   const process = gradeProcess(answer, events);
 
@@ -70,6 +71,9 @@ export function scoreAttempt(input: ScoringInput, rubric?: RubricCore | null): S
 
   const total = Math.round(correctness.score + aiJudgment.score + reasoningScore + process.score);
   const notes = integrityNotes(events);
+  if (flags.indiscriminate) {
+    notes.push("Flagged most replies (indiscriminate); flags earned no credit on any AI error.");
+  }
   if (flags.falseFlags > 0) {
     notes.push(
       `Flagged ${flags.falseFlags} correct ${flags.falseFlags === 1 ? "answer" : "answers"} as wrong; this reduced the credit for flags.`,
