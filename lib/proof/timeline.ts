@@ -47,11 +47,11 @@ export function buildTimeline(events: readonly LoggedEvent[], startedAt: Date): 
   const start = startedAt.getTime();
   const at = (ts: Date, backMs = 0) => Math.max(0, (ts.getTime() - backMs - start) / 1000);
 
-  const claimIn = new Map<string, SeededClaimId | null>();
+  const replies = new Map<string, AiResponsePayload>();
   for (const e of events) {
     if (e.type !== "ai_response") continue;
     const reply = e.payload as AiResponsePayload;
-    claimIn.set(reply.messageId, reply.trapId);
+    replies.set(reply.messageId, reply);
   }
 
   const items: TimelineItem[] = [];
@@ -74,11 +74,17 @@ export function buildTimeline(events: readonly LoggedEvent[], startedAt: Date): 
         break;
       case "flag": {
         const { messageId, note } = e.payload as { messageId: string; note: string };
-        const claim = claimIn.get(messageId);
+        const flaggedReply = replies.get(messageId);
+        const claim = flaggedReply?.trapId;
         items.push({
           atSec: at(e.ts),
           kind: "flag",
-          title: claim ? "Flagged a copilot reply as wrong — it was" : "Flagged a copilot reply as wrong — the reply was correct",
+          // Only an offline reply is known to be correct; a model-written one is not judged.
+          title: claim
+            ? "Flagged a copilot reply as wrong — it was"
+            : flaggedReply?.source === "offline"
+              ? "Flagged a copilot reply as wrong — the reply was correct"
+              : "Flagged a copilot reply as wrong",
           text: note,
           trapId: claim ?? undefined,
         });

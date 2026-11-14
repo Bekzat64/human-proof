@@ -50,6 +50,7 @@ export function scoreAttempt(input: ScoringInput, rubric?: RubricCore | null): S
     caught: exposed.filter((t) => t.outcome !== "missed").length,
     flags: flags.flags,
     falseFlags: flags.falseFlags,
+    otherFlags: flags.otherFlags,
     flagPrecision: Math.round(flags.precision * 100) / 100,
   };
   const process = gradeProcess(answer, events);
@@ -71,8 +72,11 @@ export function scoreAttempt(input: ScoringInput, rubric?: RubricCore | null): S
   const notes = integrityNotes(events);
   if (flags.falseFlags > 0) {
     notes.push(
-      `Flagged ${flags.falseFlags} correct ${flags.falseFlags === 1 ? "answer" : "answers"} as wrong (${flags.flags} flagged in total); this reduced the credit for flags.`,
+      `Flagged ${flags.falseFlags} correct ${flags.falseFlags === 1 ? "answer" : "answers"} as wrong; this reduced the credit for flags.`,
     );
+  }
+  if (flags.otherFlags > 0) {
+    notes.push(`Flagged ${flags.otherFlags} other ${flags.otherFlags === 1 ? "reply" : "replies"}.`);
   }
   if (capped) notes.push("The written answers contain text addressed to the grader; it was ignored.");
 

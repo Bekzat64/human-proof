@@ -7,7 +7,7 @@ import { IntegrityNotes } from "@/components/proof/integrity-notes";
 import { EstimatedTag, ProofShell, SectionHeading } from "@/components/proof/proof-shell";
 import { TrapCards } from "@/components/proof/trap-cards";
 import type { Score } from "@/lib/grading/types";
-import { employerBullets, falseFlags, verdictLine } from "@/lib/proof/employer";
+import { employerBullets, falseFlags, otherFlags, verdictLine } from "@/lib/proof/employer";
 import { existingVerdict, getProofAttempt, loadProof } from "@/lib/proof/load";
 import { CREDENTIAL_NAME, formatDate, validUntil } from "@/lib/proof/share";
 import { getBaseUrl } from "@/lib/site-url";
@@ -41,6 +41,7 @@ export default async function EmployerPage({ params }: Props) {
   const existing = isOwner ? null : await existingVerdict(attempt.id, anonId);
   const { bullets, estimated } = employerBullets(score);
   const wrongFlags = falseFlags(score);
+  const neutralFlags = otherFlags(score);
   const issued = attempt.submittedAt ?? attempt.startedAt;
 
   return (
@@ -93,6 +94,7 @@ export default async function EmployerPage({ params }: Props) {
           {wrongFlags === 0
             ? "False flags: 0. No correct AI answer was flagged as wrong."
             : `False flags: ${wrongFlags}. Flagged ${wrongFlags} correct AI ${wrongFlags === 1 ? "answer" : "answers"} as wrong.`}
+          {neutralFlags > 0 && ` Flagged ${neutralFlags} other ${neutralFlags === 1 ? "reply" : "replies"}.`}
         </p>
       </section>
 

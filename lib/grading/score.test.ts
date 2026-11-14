@@ -9,12 +9,19 @@ const { groundTruth: truth, traps } = variant;
 const ts = new Date("2026-11-14T12:00:00Z");
 const event = (type: string, payload: unknown): LoggedEvent => ({ type, ts, payload });
 
-const reply = (messageId: string, trapId: "T1" | "T2" | "T3" | null) =>
-  event("ai_response", { messageId, text: "…", trapId, trapAttempted: trapId, exposed: trapId !== null, source: "offline" });
+const reply = (messageId: string, trapId: "T1" | "T2" | "T3" | null, source: "offline" | "llm" = "offline") =>
+  event("ai_response", { messageId, text: "…", trapId, trapAttempted: trapId, exposed: trapId !== null, source });
 
 /** A normal session: all three claims shown, data inspected, submitted on time. */
 function session(
-  options: { flags?: string[]; shown?: ("T1" | "T2" | "T3")[]; dataAction?: string; plainReplies?: number } = {},
+  options: {
+    flags?: string[];
+    shown?: ("T1" | "T2" | "T3")[];
+    dataAction?: string;
+    plainReplies?: number;
+    /** Who wrote the plain replies: the offline copilot (known-correct) or a model. */
+    plainSource?: "offline" | "llm";
+  } = {},
 ): LoggedEvent[] {
   const shown = options.shown ?? ["T1", "T2", "T3"];
   return [
@@ -26,7 +33,7 @@ function session(
     event("prompt", { messageId: "u2", text: "which channel?" }),
     reply("m3", shown.includes("T3") ? "T3" : null),
     // Further copilot replies that carry no seeded claim: p1, p2, …
-    ...Array.from({ length: options.plainReplies ?? 0 }, (_, i) => reply(`p${i + 1}`, null)),
+    ...Array.from({ length: options.plainReplies ?? 0 }, (_, i) => reply(`p${i + 1}`, null, options.plainSource)),
     ...(options.flags ?? []).map((messageId) => event("flag", { messageId, note: "this is wrong" })),
     event("submit", { elapsedSec: 600, overtimeSec: 0 }),
   ];
@@ -94,6 +101,21 @@ describe("scoring v1", () => {
     // The answer share is untouched by precision: only the flag credit shrinks.
     const careful = scoreAttempt({ variant, answer: perfect, events: session({ plainReplies, flags: ["m1", "p1"] }) });
     expect(careful.traps.map((t) => t.points)).toEqual([8, 6, 6]); // T1: 6 + 4 × 0.5
+  });
+
+  it("3e. flags on model-written replies are neutral: counted, not penalised", () => {
+    const plainReplies = 3;
+    const flags = ["m1", "m2", "m3", "p1", "p2", "p3"];
+    const offline = scoreAttempt({ variant, answer: follower, events: session({ plainReplies, flags }) });
+    const llm = scoreAttempt({ variant, answer: follower, events: session({ plainReplies, flags, plainSource: "llm" }) });
+
+    expect(llm.dimensions.aiJudgment).toMatchObject({ score: 12, flags: 6, falseFlags: 0, otherFlags: 3, flagPrecision: 1 });
+    expect(offline.dimensions.aiJudgment).toMatchObject({ score: 6, falseFlags: 3, otherFlags: 0, flagPrecision: 0.5 });
+
+    const notes = llm.integrityNotes.join(" ");
+    expect(notes).toContain("Flagged 3 other replies.");
+    expect(notes).not.toContain("correct answer");
+    expect(notes).not.toContain("reduced the credit");
   });
 
   it("3d. only a sort, filter or download counts as inspecting the data", () => {

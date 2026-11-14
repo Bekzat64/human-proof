@@ -28,6 +28,7 @@ export const OUTCOME_LABELS: Record<TrapOutcome, string> = {
 export const exposedTraps = (score: Score): TrapResult[] => score.traps.filter((t) => t.exposed);
 
 export const falseFlags = (score: Score): number => score.dimensions.aiJudgment.falseFlags ?? 0;
+export const otherFlags = (score: Score): number => score.dimensions.aiJudgment.otherFlags ?? 0;
 
 /** One line an employer can read in five seconds. */
 export function verdictLine(score: Score): string {

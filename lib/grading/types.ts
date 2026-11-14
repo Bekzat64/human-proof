@@ -70,9 +70,11 @@ export type Score = {
       caught: number;
       /** Distinct copilot messages flagged. Absent on scores stored before flag precision. */
       flags?: number;
-      /** Flagged messages that carried no seeded claim. */
+      /** Flagged offline (known-correct) replies that carried no seeded claim. */
       falseFlags?: number;
-      /** Flags on seeded claims ÷ all flags (1 when nothing was flagged). Scales the flag credit. */
+      /** Flagged model-written replies that carried no seeded claim. Neutral: not judged. */
+      otherFlags?: number;
+      /** Flags on seeded claims ÷ (those + falseFlags); 1 when neither. Scales the flag credit. */
       flagPrecision?: number;
     };
     reasoning: { score: number; max: number } & Rubric & {

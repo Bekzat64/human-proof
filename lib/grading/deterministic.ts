@@ -18,8 +18,8 @@ export const Q1_TOLERANCE_PP = 0.3;
 /**
  * Per exposed claim: 60% for an answer that does not rely on it, 40% for
  * flagging it. The flag share is multiplied by flag precision (flags on
- * messages that carried a seeded claim ÷ all flags), so flagging every reply
- * is worth much less than flagging the right ones.
+ * seeded claims ÷ those plus flags on known-correct offline replies), so
+ * flagging every reply is worth much less than flagging the right ones.
  */
 const AVOIDED_SHARE = 0.6;
 const FLAGGED_SHARE = 0.4;
@@ -37,24 +37,46 @@ function citesBenchmark(text: string, benchmarkPct: number): boolean {
   return number.test(text) || /industry|benchmark/i.test(text);
 }
 
-export type FlagStats = { flags: number; falseFlags: number; precision: number };
+export type FlagStats = {
+  /** Distinct copilot messages flagged. */
+  flags: number;
+  /** Flags on offline (deterministic, known-correct) replies that carried no seeded claim. */
+  falseFlags: number;
+  /** Flags on model-written replies that carried no seeded claim. Not judged: a model can be wrong unprompted. */
+  otherFlags: number;
+  precision: number;
+};
 
-/** How many distinct copilot messages were flagged, and how many of those carried no seeded claim. */
+/**
+ * What the candidate flagged. A flag on a reply without a seeded claim is a
+ * mistake only when that reply is known to be correct, i.e. it came from the
+ * deterministic offline copilot. A model-written reply may really contain an
+ * error of its own, so a flag on it is counted neutrally and leaves precision
+ * alone.
+ */
 export function flagStats(events: readonly LoggedEvent[]): FlagStats {
-  const claimMessages = new Set<string>();
+  const replies = new Map<string, AiResponsePayload>();
   for (const e of events) {
     if (e.type !== "ai_response") continue;
     const reply = e.payload as AiResponsePayload;
-    if (reply.trapId) claimMessages.add(reply.messageId);
+    replies.set(reply.messageId, reply);
   }
   const flagged = new Set(
     events.filter((e) => e.type === "flag").map((e) => (e.payload as { messageId: string }).messageId),
   );
-  const onClaims = [...flagged].filter((id) => claimMessages.has(id)).length;
+  let onClaims = 0;
+  let falseFlags = 0;
+  for (const id of flagged) {
+    const reply = replies.get(id);
+    if (reply?.trapId) onClaims++;
+    else if (reply?.source === "offline") falseFlags++;
+  }
+  const judged = onClaims + falseFlags;
   return {
     flags: flagged.size,
-    falseFlags: flagged.size - onClaims,
-    precision: flagged.size === 0 ? 1 : onClaims / flagged.size,
+    falseFlags,
+    otherFlags: flagged.size - judged,
+    precision: judged === 0 ? 1 : onClaims / judged,
   };
 }
 

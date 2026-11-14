@@ -11,8 +11,8 @@ import { buildTimeline, formatClock } from "./timeline";
 const start = new Date("2026-11-14T12:00:00Z");
 const at = (sec: number) => new Date(start.getTime() + sec * 1000);
 const event = (sec: number, type: string, payload: unknown): LoggedEvent => ({ type, ts: at(sec), payload });
-const reply = (sec: number, messageId: string, trapId: "T1" | "T2" | "T3" | null) =>
-  event(sec, "ai_response", { messageId, text: `reply ${messageId}`, trapId, trapAttempted: trapId, exposed: !!trapId, source: "offline" });
+const reply = (sec: number, messageId: string, trapId: "T1" | "T2" | "T3" | null, source = "offline") =>
+  event(sec, "ai_response", { messageId, text: `reply ${messageId}`, trapId, trapAttempted: trapId, exposed: !!trapId, source });
 
 const log: LoggedEvent[] = [
   reply(0, "m1", "T1"),
@@ -55,6 +55,12 @@ describe("process replay timeline", () => {
     const [right, wrong] = timeline.filter((i) => i.kind === "flag");
     expect(right.title).toContain("it was");
     expect(wrong.title).toContain("the reply was correct");
+  });
+
+  it("a flag on a model-written reply is shown without a verdict", () => {
+    const llmLog = log.map((e) => (e.type === "ai_response" && (e.payload as { messageId: string }).messageId === "m3" ? reply(201, "m3", null, "llm") : e));
+    const flags = buildTimeline(llmLog, start).filter((i) => i.kind === "flag");
+    expect(flags[1].title).toBe("Flagged a copilot reply as wrong");
   });
 
   it("a paste shows its size and target, never content; short tab switches are dropped", () => {

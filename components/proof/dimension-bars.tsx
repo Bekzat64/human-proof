@@ -1,5 +1,5 @@
 import type { Score } from "@/lib/grading/types";
-import { DIMENSION_LABELS, falseFlags } from "@/lib/proof/employer";
+import { DIMENSION_LABELS, falseFlags, otherFlags } from "@/lib/proof/employer";
 import { EstimatedTag } from "./proof-shell";
 
 const CRITERIA: Record<string, string> = {
@@ -14,6 +14,7 @@ const CRITERIA: Record<string, string> = {
 export function DimensionBars({ score }: { score: Score }) {
   const { correctness, aiJudgment, reasoning, process } = score.dimensions;
   const wrongFlags = falseFlags(score);
+  const neutralFlags = otherFlags(score);
   const yes = (ok: boolean) => (ok ? "yes" : "no");
 
   return (
@@ -28,6 +29,7 @@ export function DimensionBars({ score }: { score: Score }) {
           : `Caught ${aiJudgment.caught} of ${aiJudgment.exposed} AI mistakes shown.`}
         {wrongFlags > 0 &&
           ` Also flagged ${wrongFlags} correct ${wrongFlags === 1 ? "answer" : "answers"} as wrong, which lowers the credit for flags.`}
+        {neutralFlags > 0 && ` Flagged ${neutralFlags} other ${neutralFlags === 1 ? "reply" : "replies"}.`}
       </Bar>
       <Bar
         label={DIMENSION_LABELS.reasoning}
