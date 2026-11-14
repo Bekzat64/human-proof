@@ -13,7 +13,8 @@ import {
 // Drizzle, and no Postgres enum types to migrate while the schema is moving.
 
 export const ATTEMPT_KINDS = ["sim", "drill"] as const;
-export const ATTEMPT_STATUSES = ["active", "graded"] as const;
+/** active → submitted (answers in, awaiting grading) → graded. */
+export const ATTEMPT_STATUSES = ["active", "submitted", "graded"] as const;
 export const EVENT_TYPES = [
   "prompt",
   "ai_response",

@@ -24,7 +24,7 @@ const STEPS: Step[] = [
   },
 ];
 
-// Placeholder landing (Stage 0). The full landing ships with Stage 7.
+// Interim landing. The full landing ships with Stage 7.
 export default function Home() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6">
@@ -44,9 +44,12 @@ export default function Home() {
             manager.
           </p>
           <div className="flex flex-wrap items-center gap-4">
-            <Button size="lg" disabled>
-              Simulation opens soon
-            </Button>
+            {/* POST, not a link: starting an attempt must be a deliberate action. */}
+            <form action="/sim/new" method="post">
+              <Button type="submit" size="lg">
+                Start the 15-minute simulation
+              </Button>
+            </form>
             <span className="text-sm text-muted-foreground">No sign-up. No login.</span>
           </div>
         </section>
@@ -65,7 +68,7 @@ export default function Home() {
       </main>
 
       <footer className="py-6 text-sm text-muted-foreground">
-        The simulation is being built right now. This page is a placeholder.
+        Early build: the simulation works end to end; grading and the public Proof page are next.
       </footer>
     </div>
   );

@@ -2,6 +2,7 @@ import "server-only";
 import { roundTo } from "./format";
 import { createRng, type Rng } from "./rng";
 import { churnMealkit as scenario, type TrapFacts } from "./scenarios/churn-mealkit";
+import { churnPct, sum } from "./scenarios/metrics";
 import { CHANNELS } from "./scenarios/types";
 import type {
   Channel,
@@ -165,13 +166,6 @@ type Facts = {
   byCancellations: ChannelFacts[];
 };
 
-/** Churn in %: cancellations ÷ subscribers at the start of the month. */
-function churnPct(rows: DatasetRow[]): number {
-  const cancellations = sum(rows, (r) => r.cancellations);
-  const subsStart = sum(rows, (r) => r.subs_start);
-  return (cancellations / subsStart) * 100;
-}
-
 function analyze(dataset: DatasetRow[]): Facts {
   const inMonth = (month: string) => dataset.filter((r) => r.month === month);
   const sepRows = inMonth(SEP);
@@ -329,8 +323,4 @@ function roundChannelFacts(c: ChannelFacts): ChannelFacts {
     sepChurnRate: roundTo(c.sepChurnRate, 2),
     churnIncreasePp: roundTo(c.churnIncreasePp, 2),
   };
-}
-
-function sum<T>(items: readonly T[], value: (item: T) => number): number {
-  return items.reduce((total, item) => total + value(item), 0);
 }

@@ -26,7 +26,7 @@ const brief: Brief = {
   // away: the candidate still has to notice which denominator the copilot used.
   dataNotes: [
     "Monthly churn rate = cancellations during the month ÷ subscribers at the start of the month.",
-    "Subscribers (end) = subscribers (start) + new subscribers − cancellations.",
+    "Subs (end) = subs (start) + new subs − cancellations. Revenue is in US dollars.",
     "Channel = the acquisition channel a subscriber originally signed up through.",
   ],
   asks: [
@@ -69,11 +69,11 @@ const questions: AnswerQuestion[] = [
 const columns: DatasetColumn[] = [
   { key: "month", label: "Month", kind: "month" },
   { key: "channel", label: "Channel", kind: "text" },
-  { key: "subs_start", label: "Subscribers (start)", kind: "count" },
-  { key: "new_subs", label: "New subscribers", kind: "count" },
+  { key: "subs_start", label: "Subs (start)", kind: "count" },
+  { key: "new_subs", label: "New subs", kind: "count" },
   { key: "cancellations", label: "Cancellations", kind: "count" },
-  { key: "subs_end", label: "Subscribers (end)", kind: "count" },
-  { key: "revenue", label: "Revenue (USD)", kind: "usd" },
+  { key: "subs_end", label: "Subs (end)", kind: "count" },
+  { key: "revenue", label: "Revenue", kind: "usd" },
 ];
 
 const months = [
@@ -199,6 +199,30 @@ const traps = {
   },
 } as const;
 
+/**
+ * The copilot's side of the scenario. The opener is templated (no LLM) and
+ * carries T1; T2 and T3 are slipped into a later reply when the candidate's
+ * message matches a trigger (see lib/copilot.ts for the mechanics).
+ */
+const copilot = {
+  opener: (t1Claim: string) =>
+    `Hi, I'm your copilot for this one. I ran a quick analysis of the table to get you started. ${t1Claim} Keep in mind September was the back-to-routine promo month, so a lot of new subscribers came in. Want me to break it down by channel, or compare it with earlier months?`,
+
+  /** True within the fiction; lets the copilot talk about the promo consistently. */
+  background: [
+    "September is the seasonal sign-up peak for meal kits, and the company ran its back-to-routine promo that month, so new subscribers jumped in every channel.",
+    "The data contains no external or industry benchmark. The only comparison it supports is the company's own history.",
+  ],
+
+  /** Candidate wording that brings each seeded claim into the reply. */
+  triggers: {
+    T2: /\b(benchmarks?|industry|normal|typical(ly)?|is (this|that|it) (really |that )?bad|how bad)\b/i,
+    T3: /\b(channels?|drivers?|drove|driving|driven|caused?|causes|causing|why)\b/i,
+  },
+  /** T2 is brought in unprompted from this user message on, if nothing else fired. */
+  forceT2FromMessage: 3,
+} as const;
+
 export const churnMealkit = {
   id: "churn-mealkit",
   title: "Churn spike at a US meal-kit subscription",
@@ -210,4 +234,5 @@ export const churnMealkit = {
   generation,
   invariants,
   traps,
+  copilot,
 } as const;
