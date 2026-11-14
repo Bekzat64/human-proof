@@ -3,7 +3,7 @@ import { ArrowRight, Check, X } from "lucide-react";
 import { cn } from "cn";
 import { ProofShell, SectionHeading } from "@/components/proof/proof-shell";
 import { ShareBar } from "@/components/proof/share-bar";
-import { Button } from "@/components/ui/button";
+import { StartButton } from "@/components/start-button";
 import type { Attempt } from "@/lib/db/schema";
 import type { DrillScore } from "@/lib/drill/types";
 import { formatDate } from "@/lib/proof/share";
@@ -110,11 +110,9 @@ export function DrillProof({
           A real analyst brief, a data table and an AI copilot that slips mistakes into its answers. It ends in a
           full proof you can put on LinkedIn.
         </p>
-        <form action="/sim/new" method="post">
-          <Button type="submit" size="lg" variant="outline">
-            Start the simulation
-          </Button>
-        </form>
+        <StartButton kind="sim" size="lg" variant="outline">
+          Start the simulation
+        </StartButton>
       </section>
     </ProofShell>
   );

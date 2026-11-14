@@ -1,7 +1,10 @@
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 import { ProofShell, SectionHeading } from "@/components/proof/proof-shell";
+import { StartButton } from "@/components/start-button";
 import { Button } from "@/components/ui/button";
 import { getDb } from "@/lib/db";
 import { attempts, feedback } from "@/lib/db/schema";
@@ -27,7 +30,7 @@ const TRAP_NAMES: Record<string, string> = {
 const pct = (part: number, whole: number) => (whole === 0 ? "—" : `${Math.round((part / whole) * 100)}%`);
 
 /** Public numbers from real attempts: no demo rows, none of our own testing. */
-export default async function StatsPage() {
+async function StatsContent() {
   const db = getDb();
   const qa = qaAnonIdsFromEnv(process.env.QA_ANON_IDS);
 
@@ -74,11 +77,9 @@ export default async function StatsPage() {
             <Button asChild size="lg">
               <Link href="/drill">Try the 3-minute drill</Link>
             </Button>
-            <form action="/sim/new" method="post">
-              <Button type="submit" size="lg" variant="outline">
-                Start the 15-minute simulation
-              </Button>
-            </form>
+            <StartButton kind="sim" size="lg" variant="outline">
+              Start the 15-minute simulation
+            </StartButton>
           </div>
         </section>
       ) : (
@@ -173,5 +174,13 @@ function Bar({ label, ratio, n }: { label: string; ratio: number | null; n: numb
         <div className="h-full rounded-full bg-violet" style={{ width: `${ratio === null ? 0 : Math.round(ratio * 100)}%` }} />
       </div>
     </div>
+  );
+}
+
+export default function StatsPage() {
+  return (
+    <Suspense fallback={<PageSkeleton label="Loading the stats…" />}>
+      <StatsContent />
+    </Suspense>
   );
 }

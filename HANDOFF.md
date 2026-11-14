@@ -13,12 +13,12 @@
 - Repo: https://github.com/Bekzat64/human-proof (public)
 - Vercel project: humanproof1/human-proof. **Git integration may not be connected yet: deploy with `vercel --prod`.** If CSS looks stale after a deploy, redeploy with `vercel --prod --force` (build cache issue seen once).
 - DB: Neon Postgres via Drizzle. `pnpm db:push` (add `--force` when running non-interactively).
-- Tests: `pnpm test` (vitest, 101 passing after Stage 5).
+- Tests: `pnpm test` (vitest, 106 passing after Stage 6).
 
 ## Stack (do not change)
 Next.js 16 App Router (`proxy.ts`, not `middleware.ts`; **Cache Components OFF**) · TS strict · Tailwind v4 + shadcn/ui · Vercel AI SDK v7 (`generateText` + `Output.object`; `generateObject` was removed) · `@ai-sdk/anthropic|google|openai` · Drizzle + Neon · zod · vitest · pnpm.
 
-## Done (Stages 0–5)
+## Done (Stages 0–6)
 - **0 Setup:** anonymous `hp_anon` cookie (1 year, httpOnly), `/api/health`, global error/not-found pages.
 - **1 Scenario engine:** seeded meal-kit churn variant → `{publicData, groundTruth, traps}`; groundTruth/traps are `server-only`; `/dev/variant?seed=N` returns 404 in prod; a pinned-fingerprint test guards the generator (**changing the generator changes every stored attempt**).
 - **2 Simulation:** `/sim/new` → `/sim/[id]` (owner-only, real 404 for others). Brief, form with localStorage draft, data table with CSV export, 15-min timer, copilot with ⚑ flags, event capture. Chat history is rebuilt from the `events` table.
@@ -26,6 +26,7 @@ Next.js 16 App Router (`proxy.ts`, not `middleware.ts`; **Cache Components OFF**
 - **LLM layer:** `lib/llm.ts` reads `LLM_PROVIDER` (anthropic|google|openai), `COPILOT_MODEL`, `GRADER_MODEL`; `isLlmAvailable()`. **No API key is set yet**, so the app runs on the **offline copilot** (deterministic, labelled with an "Offline copilot" badge) and a **heuristic rubric** (labelled "estimated").
 - **4 Proof pages:** `/p/[id]` credential view (traps caught, bars, replay with 5 free events, integrity notes), owner share bar (link / LinkedIn / resume line / image), visitor drill CTA, `/p/[id]/employer` with feedback (one per visitor; owner blocked), OG images, per-proof metadata.
 - **5 Drill + /me:** 15-item bank; 5 items a day by New York date; 3-min timer; scored on the server; drill proof pages; streak (first on-time drill per day counts; the rest are "practice run"). `/me` has history, trend, next step and outcome check-in. Landing has both CTAs.
+- **6 Pricing + pass + stats:** `/pricing` (Free vs Job-Search Pass $19/week; "ID-verified proof — coming soon" is roadmap only). `POST /api/checkout` → Stripe Checkout when `STRIPE_SECRET_KEY` is a **test** key (`/api/checkout/verify` re-reads the session from Stripe), otherwise `/checkout/demo` ("Test mode — no real charge"); both write the same `passes` row (7 days). Real `hasActivePass(anonId)`: the 2nd+ simulation needs a pass (paywall card on `/pricing?reason=sim_limit`); the full replay follows the proof owner's pass; drills are always free. Flag spam: flagging more than half of the replies without a seeded mistake (min. 2) zeroes flag credit, with the note "Flagged most replies (indiscriminate)". Public `/stats` from real rows only, n on every figure.
 
 ## Deviations log (already accepted)
 - Brief states the churn definition (cancellations ÷ start subs); September promo sign-up peak in the data.
@@ -38,7 +39,7 @@ Next.js 16 App Router (`proxy.ts`, not `middleware.ts`; **Cache Components OFF**
 2. **Flag spam in LLM mode** (fix in Stage 6, see below).
 3. Daily drill items are the same for everyone, so answers can leak. Accepted: drills are practice and do not prove anything; only the first on-time drill counts toward the streak.
 4. Anonymous employer feedback can be repeated by clearing cookies. Label it "unverified" everywhere.
-5. QA rows are in the DB. Run `pnpm db:reset-test --yes` **before** real testers arrive and before reading `/stats`.
+5. QA rows are in the DB (shared by local and prod). They are not deleted; `/stats` filters them out instead: any `anon_id` starting with `qa-`, plus the browser cookies listed in the `QA_ANON_IDS` env var (comma-separated; set in Vercel Production + Preview and in `.env.local`). Demo proofs (`is_demo = true`) are excluded from `/stats` and percentiles too. To exclude another test browser, add its `hp_anon` cookie value to `QA_ANON_IDS` and redeploy. For curl tests, send `Cookie: hp_anon=qa-<anything>`.
 6. The LinkedIn add-to-profile form has not been checked while signed in (the human will check).
 
 ## Remaining stages
@@ -74,7 +75,7 @@ STAGE REPORT, then stop.
 ```
 Read HANDOFF.md. Stage 8: no new features.
 1. Fresh incognito on prod: landing → drill → drill proof → sim (all 3 traps) → proof → employer view → feedback → /me → pricing → checkout → 2nd sim → /stats. Fix only blocking bugs.
-2. Run `pnpm db:reset-test --yes` only if QA rows pollute /stats (ask the human first).
+2. If a test browser's rows show up in /stats, add its `hp_anon` cookie value to `QA_ANON_IDS` in Vercel and redeploy (do not delete rows without asking the human).
 3. Final `pnpm test`, `pnpm build`, deploy, re-run the smoke path. Report anything broken.
 STAGE REPORT, then stop.
 ```

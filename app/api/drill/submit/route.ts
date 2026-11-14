@@ -3,6 +3,7 @@ import { jsonError, readJson } from "@/lib/api";
 import { getAttempt } from "@/lib/attempts";
 import { submitDrill } from "@/lib/drill/attempts";
 import { drillSubmitSchema } from "@/lib/drill/score";
+import { checkSubmit } from "@/lib/ratelimit";
 
 /**
  * Submit a drill. The body carries only picks and timings; the score is
@@ -22,6 +23,10 @@ export async function POST(request: Request): Promise<Response> {
 
   const redirectTo = `/drill/${attempt.id}`;
   // Already submitted (double click, second tab): the first submit stands.
-  if (attempt.status === "active") await submitDrill(attempt, answers);
+  if (attempt.status === "active") {
+    const limit = await checkSubmit(anonId);
+    if (!limit.ok) return jsonError("rate_limited", limit.message);
+    await submitDrill(attempt, answers);
+  }
   return Response.json({ ok: true, redirectTo }, { headers: { "Cache-Control": "no-store" } });
 }

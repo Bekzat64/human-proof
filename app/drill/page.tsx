@@ -1,7 +1,10 @@
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { and, desc, eq } from "drizzle-orm";
 import { ProofShell } from "@/components/proof/proof-shell";
+import { StartButton } from "@/components/start-button";
 import { Button } from "@/components/ui/button";
 import { getAnonId } from "@/lib/anon";
 import { getDb } from "@/lib/db";
@@ -24,7 +27,7 @@ const longDate = (dateKey: string) =>
   });
 
 /** Today's drill: start it, resume it, or see that it is done. */
-export default async function DrillPage() {
+async function DrillContent() {
   const anonId = await getAnonId();
   const today = drillDateKey(new Date());
 
@@ -70,11 +73,9 @@ export default async function DrillPage() {
               <Link href={`/drill/${inProgress.id}`}>Resume today&apos;s drill</Link>
             </Button>
           ) : (
-            <form action="/drill/new" method="post">
-              <Button type="submit" size="lg" variant={completedToday ? "outline" : "default"}>
-                {completedToday ? "Take it again (won't count)" : "Start today's drill"}
-              </Button>
-            </form>
+            <StartButton kind="drill" variant={completedToday ? "outline" : "default"}>
+              {completedToday ? "Take it again (won't count)" : "Start today's drill"}
+            </StartButton>
           )}
           {lastDone && (
             <Button asChild size="lg" variant={completedToday ? "default" : "outline"}>
@@ -96,12 +97,18 @@ export default async function DrillPage() {
           The 15-minute simulation is a real analyst brief with a copilot that makes mistakes on its own. It ends in
           a shareable proof.
         </p>
-        <form action="/sim/new" method="post">
-          <Button type="submit" variant="outline" size="lg">
-            Start the 15-minute simulation
-          </Button>
-        </form>
+        <StartButton kind="sim" variant="outline">
+          Start the 15-minute simulation
+        </StartButton>
       </section>
     </ProofShell>
+  );
+}
+
+export default function DrillPage() {
+  return (
+    <Suspense fallback={<PageSkeleton label="Loading today's drill…" />}>
+      <DrillContent />
+    </Suspense>
   );
 }

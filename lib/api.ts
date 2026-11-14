@@ -11,6 +11,7 @@ export type ApiErrorCode =
   | "own_attempt"
   | "already_recorded"
   | "message_limit"
+  | "rate_limited"
   | "copilot_unavailable";
 
 const STATUS: Record<ApiErrorCode, number> = {
@@ -21,6 +22,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   own_attempt: 403,
   already_recorded: 409,
   message_limit: 429,
+  rate_limited: 429,
   copilot_unavailable: 503,
 };
 

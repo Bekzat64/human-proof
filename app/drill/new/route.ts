@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 import { getAnonId } from "@/lib/anon";
 import { createDrillAttempt } from "@/lib/drill/attempts";
+import { checkNewDrill } from "@/lib/ratelimit";
+import { startRedirect, tooManyRequests } from "@/lib/start-response";
 
-// 303 See Other: after the POST the browser follows with a plain GET.
-const seeOther = (path: string, request: Request) => NextResponse.redirect(new URL(path, request.url), 303);
-
-/** Start today's drill. POST only, so prefetching and crawlers cannot start the clock. */
+/** Start today's drill. POST only, so prefetching and crawlers cannot start the clock. At most 10 an hour. */
 export async function POST(request: Request) {
   const anonId = await getAnonId();
-  if (!anonId) return seeOther("/drill", request);
-  return seeOther(`/drill/${await createDrillAttempt(anonId)}`, request);
+  if (!anonId) return startRedirect(request, "/drill");
+
+  const limit = await checkNewDrill(anonId);
+  if (!limit.ok) return tooManyRequests(request, limit.message);
+
+  return startRedirect(request, `/drill/${await createDrillAttempt(anonId)}`);
 }
 
 export function GET(request: Request) {
-  return seeOther("/drill", request);
+  return NextResponse.redirect(new URL("/drill", request.url), 303);
 }

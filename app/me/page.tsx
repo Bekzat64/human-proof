@@ -1,9 +1,12 @@
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { ArrowRight } from "lucide-react";
 import { Checkin } from "@/components/me/checkin";
 import { ProofShell, SectionHeading } from "@/components/proof/proof-shell";
+import { StartButton } from "@/components/start-button";
 import { Button } from "@/components/ui/button";
 import { getAnonId } from "@/lib/anon";
 import type { CheckinQuestion } from "@/lib/checkin";
@@ -20,7 +23,7 @@ import { formatDate } from "@/lib/proof/share";
 export const metadata: Metadata = { title: "My proofs", robots: { index: false } };
 
 /** This browser's record: history, streak, trend, next step. No account: it is keyed by the anonymous cookie. */
-export default async function MePage() {
+async function MeContent() {
   const anonId = await getAnonId();
   const rows = anonId
     ? await getDb().select().from(attempts).where(eq(attempts.anonId, anonId)).orderBy(desc(attempts.startedAt))
@@ -40,11 +43,9 @@ export default async function MePage() {
             <Button asChild size="lg">
               <Link href="/drill">Try the 3-minute drill</Link>
             </Button>
-            <form action="/sim/new" method="post">
-              <Button type="submit" size="lg" variant="outline">
-                Start the 15-minute simulation
-              </Button>
-            </form>
+            <StartButton kind="sim" size="lg" variant="outline">
+              Start the 15-minute simulation
+            </StartButton>
           </div>
         </section>
       </ProofShell>
@@ -106,11 +107,9 @@ export default async function MePage() {
             </Button>
           )}
           {(step.kind === "sim" || step.kind === "start") && (
-            <form action="/sim/new" method="post">
-              <Button type="submit" size="lg" variant={step.kind === "sim" ? "default" : "outline"}>
-                Start a new simulation
-              </Button>
-            </form>
+            <StartButton kind="sim" variant={step.kind === "sim" ? "default" : "outline"}>
+              Start a new simulation
+            </StartButton>
           )}
         </div>
       </section>
@@ -217,5 +216,14 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
       <dt className="text-xs tracking-wide text-muted-foreground">{label}</dt>
       <dd className="font-display text-3xl">{children}</dd>
     </div>
+  );
+}
+
+/** The shell renders at once; the record streams in behind a skeleton. */
+export default function MePage() {
+  return (
+    <Suspense fallback={<PageSkeleton label="Loading your record…" />}>
+      <MeContent />
+    </Suspense>
   );
 }

@@ -1,7 +1,10 @@
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, Clock, Lock } from "lucide-react";
 import { ProofShell } from "@/components/proof/proof-shell";
+import { StartButton } from "@/components/start-button";
 import { Button } from "@/components/ui/button";
 import { getAnonId } from "@/lib/anon";
 import { activePass, PASS_DAYS } from "@/lib/pass";
@@ -13,13 +16,13 @@ export const metadata: Metadata = {
   description: "Free: the daily drill, one full simulation and a proof page. Job-Search Pass: $19 a week.",
 };
 
-const FREE = ["Daily 3-minute drill, every day", "1 full 15-minute simulation", "Public proof page with score and AI errors caught"];
-const PASS = [
-  "Unlimited simulations",
-  "Full process replay on your proofs",
+const FREE = [
+  "Daily 3-minute drill, every day",
+  "1 full 15-minute simulation",
+  "Public proof page with score and AI errors caught",
   "Employer view link to send to hiring managers",
-  "New scenarios as they ship",
 ];
+const PASS = ["Unlimited simulations", "Full process replay on your proofs", "New scenarios first, as they ship"];
 
 const NOTICES: Record<string, { tone: "ok" | "info" | "error"; text: string }> = {
   success: { tone: "ok", text: "Your Job-Search Pass is active." },
@@ -31,7 +34,7 @@ const NOTICES: Record<string, { tone: "ok" | "info" | "error"; text: string }> =
 
 type Props = { searchParams: Promise<{ checkout?: string; reason?: string }> };
 
-export default async function PricingPage({ searchParams }: Props) {
+async function PricingContent({ searchParams }: Props) {
   const { checkout, reason } = await searchParams;
   const pass = await activePass(await getAnonId());
   const notice = checkout ? NOTICES[checkout] : undefined;
@@ -109,11 +112,9 @@ export default async function PricingPage({ searchParams }: Props) {
                 <p className="rounded-lg border border-violet/50 p-3 text-sm">
                   Pass active until {formatDate(pass.expiresAt)}.
                 </p>
-                <form action="/sim/new" method="post">
-                  <Button type="submit" size="lg" className="w-full">
-                    Start a simulation
-                  </Button>
-                </form>
+                <StartButton kind="sim" size="lg">
+                  Start a simulation
+                </StartButton>
               </>
             ) : (
               <form action="/api/checkout" method="post">
@@ -145,5 +146,13 @@ function Features({ items }: { items: string[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+export default function PricingPage(props: Props) {
+  return (
+    <Suspense fallback={<PageSkeleton label="Loading pricing…" />}>
+      <PricingContent {...props} />
+    </Suspense>
   );
 }

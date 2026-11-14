@@ -23,7 +23,7 @@ export function ProofShell({
           </span>
         </div>
       )}
-      <header className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 pt-8">
+      <header className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-6 pt-8">
         <Link href="/" className="text-xs font-semibold tracking-[0.28em] text-foreground/90 hover:text-foreground">
           HUMAN PROOF
         </Link>
@@ -35,12 +35,14 @@ export function ProofShell({
             My proofs
           </Link>
         </nav>
-        {demo && (
-          <span className="rounded-full border border-destructive/60 px-3 py-1 text-xs font-medium tracking-wide text-destructive">
+      </header>
+      {demo && (
+        <div className="mx-auto w-full max-w-3xl px-6 pt-5">
+          <span className="inline-block rounded-full border border-destructive/60 px-3 py-1 text-xs font-medium tracking-wide text-destructive">
             DEMO — not a real candidate
           </span>
-        )}
-      </header>
+        </div>
+      )}
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-20 px-6 pt-14 pb-24">{children}</main>
       <footer className="mx-auto w-full max-w-3xl border-t px-6 py-8 text-xs leading-relaxed text-muted-foreground">
         HUMAN PROOF is a 15-minute analyst work simulation. The AI copilot in it is deliberately seeded

@@ -8,6 +8,7 @@ import { getDb } from "@/lib/db";
 import { attempts, events } from "@/lib/db/schema";
 import type { SubmitPayload } from "@/lib/events/schema";
 import { gradeAttempt } from "@/lib/grading/compose";
+import { checkSubmit } from "@/lib/ratelimit";
 import { SIM_DURATION_MS } from "@/lib/sim-config";
 
 /**
@@ -28,6 +29,11 @@ export async function POST(request: Request): Promise<Response> {
 
   const redirectTo = `/p/${attempt.id}`;
   const ok = () => Response.json({ ok: true, redirectTo }, { headers: { "Cache-Control": "no-store" } });
+  // A repeat submit of a closed attempt is harmless and not counted.
+  if (attempt.status !== "active") return ok();
+
+  const limit = await checkSubmit(attempt.anonId);
+  if (!limit.ok) return jsonError("rate_limited", limit.message);
 
   const db = getDb();
   const submittedAt = new Date();
