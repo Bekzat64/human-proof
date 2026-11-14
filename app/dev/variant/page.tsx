@@ -9,10 +9,14 @@ import { buildVariant } from "@/lib/variant";
 import { DatasetTable } from "./dataset-table";
 import { TrapCard } from "./trap-card";
 
-export const metadata: Metadata = {
-  title: "Variant inspector (dev)",
-  robots: { index: false, follow: false },
-};
+const isProduction = process.env.NODE_ENV === "production";
+
+// In production this route must look like any other missing page, title included.
+export function generateMetadata(): Metadata {
+  return isProduction
+    ? { title: "Page not found" }
+    : { title: "Variant inspector (dev)", robots: { index: false, follow: false } };
+}
 
 const MAX_SEED = 2 ** 31 - 1; // attempts.seed is a Postgres integer
 
@@ -34,7 +38,7 @@ export default async function VariantInspector({
 }: {
   searchParams: Promise<{ seed?: string | string[] }>;
 }) {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (isProduction) notFound();
 
   const seed = parseSeed((await searchParams).seed);
 
