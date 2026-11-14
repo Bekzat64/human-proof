@@ -208,33 +208,31 @@ export function DrillRunner({
         )}
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-6">
-        <Button variant="outline" size="lg" disabled={index === 0 || pending} onClick={() => go(index - 1)}>
-          <ArrowLeft aria-hidden /> Back
-        </Button>
-        <span className="text-sm text-muted-foreground">
-          {answeredCount} of {items.length} answered
-        </span>
-        {last ? (
-          <Button size="lg" disabled={pending} onClick={() => void submit()}>
-            {pending ? "Scoring…" : "Submit drill"}
+      {/* Sticks to the bottom of the screen, so Next stays in reach on short screens. */}
+      <div className="sticky bottom-0 z-10 -mx-6 flex flex-col gap-2 border-t bg-background/95 px-6 py-3 backdrop-blur">
+        <div className="flex items-center justify-between gap-3">
+          <Button variant="outline" size="lg" disabled={index === 0 || pending} onClick={() => go(index - 1)}>
+            <ArrowLeft aria-hidden /> Back
           </Button>
-        ) : (
-          <Button size="lg" disabled={pending} onClick={() => go(index + 1)}>
-            Next <ArrowRight aria-hidden />
-          </Button>
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {answeredCount} of {items.length} answered
+          </span>
+          {last || answeredCount === items.length ? (
+            <Button size="lg" disabled={pending} onClick={() => void submit()}>
+              {pending ? "Scoring…" : "Submit drill"}
+            </Button>
+          ) : (
+            <Button size="lg" disabled={pending} onClick={() => go(index + 1)}>
+              Next <ArrowRight aria-hidden />
+            </Button>
+          )}
+        </div>
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
         )}
       </div>
-      {!last && answeredCount === items.length && (
-        <Button size="lg" className="self-end" disabled={pending} onClick={() => void submit()}>
-          {pending ? "Scoring…" : "Submit drill"}
-        </Button>
-      )}
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
     </div>
   );
 }

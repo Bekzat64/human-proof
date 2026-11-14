@@ -14,7 +14,7 @@ import { getDb } from "@/lib/db";
 import { attempts, feedback } from "@/lib/db/schema";
 import { computeStreak } from "@/lib/drill/score";
 import { dateFromScenarioId, drillDateKey, previousDateKey } from "@/lib/drill/daily";
-import { REASON_LABELS, type DrillScore } from "@/lib/drill/types";
+import { REASON_LABELS, isDrillExpired, type DrillScore } from "@/lib/drill/types";
 import { DIMENSIONS, type Score } from "@/lib/grading/types";
 import { drillAccuracy, nextStep, simRatios, type SimPoint } from "@/lib/me";
 import { DIMENSION_LABELS } from "@/lib/proof/employer";
@@ -181,9 +181,18 @@ async function MeContent() {
         <ul className="flex flex-col divide-y rounded-xl border bg-card">
           {rows.map((a) => {
             const isDrill = a.kind === "drill";
-            const href = a.status === "active" ? (isDrill ? `/drill/${a.id}` : `/sim/${a.id}`) : `/p/${a.id}`;
-            const result =
-              a.status === "active"
+            // A drill left open past its 3 minutes can no longer count; offer a fresh one instead.
+            const expired = isDrill && a.status === "active" && isDrillExpired(a.startedAt);
+            const href = expired
+              ? "/drill"
+              : a.status === "active"
+                ? isDrill
+                  ? `/drill/${a.id}`
+                  : `/sim/${a.id}`
+                : `/p/${a.id}`;
+            const result = expired
+              ? "Expired"
+              : a.status === "active"
                 ? "In progress"
                 : a.status === "submitted"
                   ? "Grading…"

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DRILLS } from "../scenarios/drills";
 import { dailyDrill, drillDateKey, previousDateKey, toPublicItem } from "./daily";
 import { computeStreak, drillSubmitSchema, scoreDrill } from "./score";
-import { DRILL_DOMAINS, DRILL_REASONS, type DrillAnswer } from "./types";
+import { DRILL_DOMAINS, DRILL_REASONS, isDrillExpired, type DrillAnswer } from "./types";
 
 describe("drill bank", () => {
   it("has 15 items with unique ids, in valid shape", () => {
@@ -166,5 +166,17 @@ describe("streak", () => {
     expect(streak(["2026-11-13", "2026-11-12"], "2026-11-14")).toBe(2);
     expect(streak(["2026-11-12", "2026-11-11"], "2026-11-14")).toBe(0);
     expect(streak(["2026-11-14", "2026-11-12"], "2026-11-14")).toBe(1);
+  });
+});
+
+describe("expired drills", () => {
+  const started = new Date("2026-11-14T12:00:00Z");
+  const at = (sec: number) => started.getTime() + sec * 1000;
+
+  it("a drill is open for 3 minutes plus 15 seconds of grace, then expired", () => {
+    expect(isDrillExpired(started, at(60))).toBe(false);
+    expect(isDrillExpired(started, at(195))).toBe(false); // 3:15 exactly
+    expect(isDrillExpired(started, at(196))).toBe(true);
+    expect(isDrillExpired(started, at(6 * 3600))).toBe(true);
   });
 });

@@ -5,10 +5,7 @@ import { getDb } from "../db";
 import { attempts, events, type Attempt } from "../db/schema";
 import { dailyDrill, dateFromScenarioId, drillDateKey, previousDateKey, scenarioIdForDate, seedFromDate } from "./daily";
 import { computeStreak, scoreDrill } from "./score";
-import { DRILL_DURATION_MS, type DrillAnswer, type DrillScore } from "./types";
-
-/** Network and auto-submit slack after the 3 minutes. */
-const SUBMIT_GRACE_MS = 15_000;
+import { DRILL_DURATION_MS, isDrillExpired, type DrillAnswer, type DrillScore } from "./types";
 
 /** Start today's drill for this visitor. The clock starts now. */
 export async function createDrillAttempt(anonId: string): Promise<string> {
@@ -66,7 +63,7 @@ export async function submitDrill(attempt: Attempt, answers: DrillAnswer[]): Pro
   // the request itself). A late drill is still scored, as practice.
   const elapsedMs = submittedAt.getTime() - attempt.startedAt.getTime();
   const earlier = await completedDrillDates(attempt.anonId);
-  const onTime = elapsedMs <= DRILL_DURATION_MS + SUBMIT_GRACE_MS;
+  const onTime = !isDrillExpired(attempt.startedAt, submittedAt.getTime());
   const countsForStreak = onTime && !earlier.includes(date);
   // The streak "as of this drill" runs back from the drill's own day.
   const streak = computeStreak([...earlier, date], date, previousDateKey);

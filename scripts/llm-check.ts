@@ -69,11 +69,11 @@ async function main() {
       emit: (delta) => chunks.push(delta),
       onModelError: (error) => errors.push(error),
     });
-    const continuation = result.reply.slice((result.opening?.length ?? 0) + 2).trim();
+    const continuation = result.reply.slice(result.opening?.length ?? 0).trim();
 
     console.log(`copilot ${turn.expect}: "${turn.message}"`);
     check(claim === turn.expect, `server picked ${claim ?? "no claim"} (expected ${turn.expect})`);
-    check(chunks[0] === `${result.opening}\n\n`, "seeded sentence streamed first, word for word");
+    check(chunks[0] === result.opening, "seeded sentence streamed first, word for word, as its own chunk");
     check(result.source === "llm", `model answered (source: ${result.source}${errors.length ? `, error: ${String(errors[0]).slice(0, 120)}` : ""})`);
     check(continuation.length > 0 && !continuation.includes(result.opening ?? "\u0000"), "model continued without repeating the sentence");
     check(!GIVEAWAY.test(continuation), "no giveaway words in the continuation");

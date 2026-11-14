@@ -29,10 +29,13 @@ export type CopilotReply = {
 /**
  * Write one copilot reply, chunk by chunk, through `emit`.
  *
- * A seeded claim is fixed text and goes out first, before anything else is
- * written. Then the configured LLM continues; if there is no key, the model
- * errors, or no token arrives within 8 s, the deterministic offline copilot
- * answers instead. Shared by POST /api/copilot and `pnpm llm:check`, so the
+ * A seeded claim is fixed text and goes out first, as its own chunk, before
+ * anything else is written. Then the configured LLM continues; if there is no
+ * key, the model errors, or no token arrives within 8 s, the deterministic
+ * offline copilot answers instead. Offline, a T3 reply is the claim alone: the
+ * per-channel rates that would expose it come only when the candidate asks for
+ * them in a later message (consistent with the model's rule not to volunteer
+ * corrections). Shared by POST /api/copilot and `pnpm llm:check`, so the
  * check exercises exactly what production runs.
  */
 export async function writeCopilotReply(input: {
@@ -52,8 +55,16 @@ export async function writeCopilotReply(input: {
   };
 
   const opening = claim ? claimSentence(variant, claim) : null;
-  if (opening) emit(`${opening}\n\n`);
+  if (opening) emit(opening);
   const openingLength = reply.length;
+  // Whatever follows the claim starts on a new paragraph.
+  let separated = opening === null;
+  const continueWith = (delta: string) => {
+    if (!separated) {
+      separated = true;
+      emit(`\n\n${delta.trimStart()}`);
+    } else emit(delta);
+  };
 
   let source: ReplySource = "offline";
   let firstModelTokenMs: number | null = null;
@@ -72,8 +83,9 @@ export async function writeCopilotReply(input: {
       });
       for await (const delta of result.textStream) {
         clearTimeout(timer); // the model is answering: let it finish
+        if (delta === "") continue;
         firstModelTokenMs ??= Math.round(performance.now() - started);
-        emit(delta);
+        continueWith(delta);
       }
     } catch (error) {
       onModelError?.(error);
@@ -83,7 +95,7 @@ export async function writeCopilotReply(input: {
     // Anything the model wrote stays, even if it then failed mid-reply.
     if (reply.slice(openingLength).trim() !== "") source = "llm";
   }
-  if (source === "offline") emit(offlineReply(variant, message));
+  if (source === "offline" && claim !== "T3") continueWith(offlineReply(variant, message));
 
   return { reply, source, opening, firstModelTokenMs, totalMs: Math.round(performance.now() - started) };
 }

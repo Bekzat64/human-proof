@@ -58,10 +58,17 @@ export function FlagPopover({ flaggedNote, disabled, onFlag }: Props) {
             placeholder="e.g. Wrong denominator"
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter sends the flag; Shift+Enter is a new line. Not while an IME is composing.
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
           />
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">
-              {tooShort ? `At least ${FLAG_NOTE_MIN_CHARS} characters` : "This is recorded on your Proof"}
+              {tooShort ? `At least ${FLAG_NOTE_MIN_CHARS} characters` : "Enter to flag · Shift+Enter for a new line"}
             </span>
             <Button type="submit" size="sm" variant="destructive" disabled={tooShort}>
               Flag message

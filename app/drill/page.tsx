@@ -11,6 +11,7 @@ import { getDb } from "@/lib/db";
 import { attempts } from "@/lib/db/schema";
 import { completedDrillDates, currentStreak } from "@/lib/drill/attempts";
 import { drillDateKey, scenarioIdForDate } from "@/lib/drill/daily";
+import { isDrillExpired } from "@/lib/drill/types";
 
 export const metadata: Metadata = {
   title: "Daily drill",
@@ -33,7 +34,7 @@ async function DrillContent() {
   const [todays, doneDates, streak] = anonId
     ? await Promise.all([
         getDb()
-          .select({ id: attempts.id, status: attempts.status, total: attempts.total })
+          .select({ id: attempts.id, status: attempts.status, total: attempts.total, startedAt: attempts.startedAt })
           .from(attempts)
           .where(and(eq(attempts.anonId, anonId), eq(attempts.kind, "drill"), eq(attempts.scenarioId, scenarioIdForDate(today))))
           .orderBy(desc(attempts.startedAt)),
@@ -42,7 +43,8 @@ async function DrillContent() {
       ])
     : [[], [], 0];
 
-  const inProgress = todays.find((a) => a.status === "active");
+  // An open drill past its 3 minutes is expired: start a new one rather than resume it.
+  const inProgress = todays.find((a) => a.status === "active" && !isDrillExpired(a.startedAt));
   const completedToday = doneDates.includes(today);
   const lastDone = todays.find((a) => a.status === "graded");
 

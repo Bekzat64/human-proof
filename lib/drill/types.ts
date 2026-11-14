@@ -41,6 +41,13 @@ export type DrillItem = PublicDrillItem & {
 
 export const DRILL_ITEMS_PER_DAY = 5;
 export const DRILL_DURATION_MS = 3 * 60 * 1000;
+/** Network and auto-submit slack after the 3 minutes. */
+export const DRILL_GRACE_MS = 15_000;
+
+/** A drill still open after its 3 minutes (plus grace) can no longer count: it has expired. */
+export function isDrillExpired(startedAt: Date, now: number = Date.now()): boolean {
+  return now > startedAt.getTime() + DRILL_DURATION_MS + DRILL_GRACE_MS;
+}
 export const SENTENCE_POINTS = 15;
 export const REASON_POINTS = 5;
 

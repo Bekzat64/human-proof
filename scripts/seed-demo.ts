@@ -91,8 +91,8 @@ async function main() {
   const { getDb } = await import("../lib/db");
   const { attempts, events, feedback } = await import("../lib/db/schema");
   const { buildVariant } = await import("../lib/variant");
-  const { copilotOpener, pickClaim, claimSentence } = await import("../lib/copilot");
-  const { offlineReply } = await import("../lib/copilot-offline");
+  const { copilotOpener, pickClaim } = await import("../lib/copilot");
+  const { writeCopilotReply } = await import("../lib/copilot-reply");
   const { churnMealkit } = await import("../lib/scenarios/churn-mealkit");
   const { answerSchema } = await import("../lib/answers");
   const { gradeAttempt } = await import("../lib/grading/compose");
@@ -130,14 +130,14 @@ async function main() {
       if ("ask" in step) {
         asked++;
         push(step.at, "prompt", { messageId: `msg_${script.id}_u${asked}`, text: step.ask });
-        // The same decision and composition as /api/copilot in offline mode.
+        // The same decision and the same reply writer as /api/copilot (offline mode).
         const claim = pickClaim({ message: step.ask, userMessageNumber: asked, history: { shown } });
-        const opening = claim ? `${claimSentence(variant, claim)}\n\n` : "";
         if (claim) shown.add(claim);
+        const { reply } = await writeCopilotReply({ variant, claim, message: step.ask, history: [], emit: () => {} });
         lastReplyId = `msg_${script.id}_a${asked}`;
         push(step.at + 2, "ai_response", {
           messageId: lastReplyId,
-          text: opening + offlineReply(variant, step.ask),
+          text: reply,
           trapId: claim,
           trapAttempted: claim,
           exposed: claim !== null,
