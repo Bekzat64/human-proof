@@ -57,7 +57,9 @@ export default async function DrillAttemptPage({ params }: { params: Promise<{ a
               · <span aria-hidden>🔥</span> {score.streak}-day streak
             </>
           ) : (
-            " · practice run, does not count toward the streak"
+            score.overtimeSec > 15
+              ? " · submitted after the 3 minutes, so it counts as practice"
+              : " · practice run, does not count toward the streak"
           )}
         </p>
         <div className="flex flex-wrap gap-3">

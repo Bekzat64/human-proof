@@ -40,7 +40,14 @@ export function DrillProof({
               <span aria-hidden>🔥</span> {score.streak}-day streak
             </span>
           )}
-          <span>Finished in {score.elapsedSec}s</span>
+          <span>
+            Finished in {score.elapsedSec}s{score.overtimeSec > 0 && ` (${score.overtimeSec}s over time)`}
+          </span>
+          {!score.countsForStreak && (
+            <span className="rounded-full border border-dashed border-foreground/30 px-2.5 py-0.5 text-xs">
+              Practice run: a retake or late submit, not the day&apos;s counted attempt
+            </span>
+          )}
         </p>
         <ol className="grid grid-cols-5 gap-2 sm:gap-3" aria-label="Result per item">
           {score.items.map((item, n) => (
