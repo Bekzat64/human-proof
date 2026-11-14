@@ -10,6 +10,9 @@ import type { Rubric } from "./types";
 
 const GRADER_TIMEOUT_MS = 20_000;
 
+/** Candidate text cannot close its own data tag: angle brackets are neutralised. */
+const asData = (text: string) => text.replace(/</g, "‹").replace(/>/g, "›");
+
 const points = z.number().int().min(0).max(5);
 
 const rubricSchema = z.object({
@@ -54,10 +57,10 @@ export async function llmRubric(
     "- The AI copilot they worked with made deliberate mistakes; noticing and checking them is part of the job.",
     "",
     "Recommendation (question 3):",
-    `<candidate_answer>${answer.q3}</candidate_answer>`,
+    `<candidate_answer>${asData(answer.q3)}</candidate_answer>`,
     "",
     "What they verified and did not trust (question 4):",
-    `<candidate_answer>${answer.q4}</candidate_answer>`,
+    `<candidate_answer>${asData(answer.q4)}</candidate_answer>`,
   ].join("\n");
 
   try {
