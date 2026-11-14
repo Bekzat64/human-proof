@@ -53,7 +53,10 @@ export default async function MePage() {
 
   const today = drillDateKey(new Date());
   const drills = rows.filter((a) => a.kind === "drill" && a.status === "graded" && a.score);
-  const drillDates = drills.map((a) => dateFromScenarioId(a.scenarioId));
+  // Only counted drills (on time, first of their day) make a streak.
+  const drillDates = drills
+    .filter((a) => (a.score as DrillScore).countsForStreak)
+    .map((a) => dateFromScenarioId(a.scenarioId));
   const streak = computeStreak(drillDates, today, previousDateKey);
   const accuracy = drillAccuracy(drills.map((a) => a.score as DrillScore));
 

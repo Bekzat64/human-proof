@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getDb } from "../db";
 import { attempts, events, type Attempt } from "../db/schema";
@@ -26,12 +26,19 @@ export async function createDrillAttempt(anonId: string): Promise<string> {
   return id;
 }
 
-/** New York dates on which this visitor completed a drill (with repeats). */
+/** New York dates on which this visitor completed a drill that counts (on time, first of its day). */
 export async function completedDrillDates(anonId: string): Promise<string[]> {
   const rows = await getDb()
     .select({ scenarioId: attempts.scenarioId })
     .from(attempts)
-    .where(and(eq(attempts.anonId, anonId), eq(attempts.kind, "drill"), eq(attempts.status, "graded")));
+    .where(
+      and(
+        eq(attempts.anonId, anonId),
+        eq(attempts.kind, "drill"),
+        eq(attempts.status, "graded"),
+        sql`${attempts.score} ->> 'countsForStreak' = 'true'`,
+      ),
+    );
   return rows.map((row) => dateFromScenarioId(row.scenarioId));
 }
 
