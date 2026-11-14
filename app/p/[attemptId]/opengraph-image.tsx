@@ -49,7 +49,7 @@ export default async function Image({ params }: { params: Promise<{ attemptId: s
         {score ? (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "flex", fontSize: 150, lineHeight: 1, letterSpacing: -4 }}>{score.level}</div>
+              <div style={{ display: "flex", fontSize: 128, lineHeight: 1, letterSpacing: -3 }}>{score.level}</div>
               <div style={{ display: "flex", fontSize: 44, color: VIOLET, marginTop: 28 }}>
                 {score.dimensions.aiJudgment.exposed === 0
                   ? "Timed analyst simulation with an AI copilot"
@@ -72,7 +72,6 @@ export default async function Image({ params }: { params: Promise<{ attemptId: s
 
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 28, color: MUTED }}>
           <div style={{ display: "flex" }}>{score ? `Verify: ${host}/p/${attemptId}` : host}</div>
-          <div style={{ display: "flex" }}>No sign-up · open to anyone</div>
         </div>
       </div>
     ),
