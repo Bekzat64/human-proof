@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { after } from "next/server";
 import { submitSchema } from "@/lib/answers";
 import { getAnonId } from "@/lib/anon";
 import { jsonError, readJson } from "@/lib/api";
@@ -6,12 +7,13 @@ import { getOwnedSimAttempt } from "@/lib/attempts";
 import { getDb } from "@/lib/db";
 import { attempts, events } from "@/lib/db/schema";
 import type { SubmitPayload } from "@/lib/events/schema";
+import { gradeAttempt } from "@/lib/grading/compose";
 import { SIM_DURATION_MS } from "@/lib/sim-config";
 
 /**
  * Save the candidate's answers and close the attempt: active → submitted.
  * Late submissions are accepted; how far over time they are is recorded.
- * (Grading — submitted → graded — arrives in Stage 3.)
+ * Grading (submitted → graded) is triggered here and runs after the response.
  */
 export async function POST(request: Request): Promise<Response> {
   const parsed = submitSchema.safeParse(await readJson(request));
@@ -44,6 +46,10 @@ export async function POST(request: Request): Promise<Response> {
     overtimeSec: Math.max(0, Math.round((elapsedMs - SIM_DURATION_MS) / 1000)),
   };
   await db.insert(events).values({ attemptId: attempt.id, type: "submit", ts: submittedAt, payload });
+
+  // Grade once the response is on its way. If this is ever cut short, the
+  // status endpoint the Proof page polls grades the attempt instead.
+  after(() => gradeAttempt(attempt.id).catch((error) => console.error("grading failed", error)));
 
   return ok();
 }

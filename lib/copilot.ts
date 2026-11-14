@@ -1,5 +1,4 @@
 import "server-only";
-import { createAnthropic } from "@ai-sdk/anthropic";
 import type { SeededClaimId } from "./events/schema";
 import { formatCount, formatPct } from "./format";
 import { churnMealkit as scenario } from "./scenarios/churn-mealkit";
@@ -26,18 +25,6 @@ export const COPILOT_MAX_OUTPUT_TOKENS = 400;
 
 /** How many times a claim may be requested before we stop trying to place it. */
 const MAX_TRIES_PER_CLAIM = 2;
-
-export function copilotModelId(): string {
-  return process.env.COPILOT_MODEL || "claude-haiku-5-5";
-}
-
-// The endpoint is pinned so a stray ANTHROPIC_BASE_URL in the environment can
-// never redirect requests (and the API key) somewhere else.
-const anthropic = createAnthropic({ baseURL: "https://api.anthropic.com/v1" });
-
-export function copilotModel() {
-  return anthropic(copilotModelId());
-}
 
 /** The first message of every attempt: templated, carries T1. */
 export function copilotOpener(variant: Variant): string {

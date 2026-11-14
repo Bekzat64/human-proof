@@ -102,6 +102,10 @@ export type AiResponsePayload = {
   /** The seeded claim this reply was asked to make, whether or not it landed. */
   trapAttempted: SeededClaimId | null;
   exposed: boolean;
+  /** Who wrote it: the model, the deterministic offline copilot, or the fixed opener. */
+  source?: ReplySource;
 };
+
+export type ReplySource = "llm" | "offline" | "template";
 
 export type SubmitPayload = { elapsedSec: number; overtimeSec: number };

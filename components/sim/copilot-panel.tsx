@@ -4,6 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Loader2, SendHorizontal, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { ApiError } from "@/lib/api";
@@ -20,7 +21,11 @@ const toUiMessage = (message: ChatMessage): UIMessage => ({
   id: message.id,
   role: message.role,
   parts: [{ type: "text", text: message.text }],
+  metadata: { source: message.source },
 });
+
+const isOffline = (message: UIMessage) =>
+  (message.metadata as { source?: string } | undefined)?.source === "offline";
 
 /** API routes answer errors as JSON; show their message rather than the raw body. */
 function friendly(error: Error): string {
@@ -124,6 +129,11 @@ export function CopilotPanel({ attemptId, initialMessages, initialFlags, logger 
               <p className="rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm whitespace-pre-wrap">
                 {text || "…"}
               </p>
+              {isOffline(message) && (
+                <Badge variant="outline" title="Scripted replies from the data: no AI model answered this.">
+                  Offline copilot
+                </Badge>
+              )}
               <FlagPopover
                 flaggedNote={flags[message.id]}
                 disabled={streaming}

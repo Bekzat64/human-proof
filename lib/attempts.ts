@@ -6,7 +6,7 @@ import type { ChatTurn, ClaimHistory } from "./copilot";
 import { copilotOpener } from "./copilot";
 import { getDb } from "./db";
 import { attempts, events, type Attempt } from "./db/schema";
-import type { AiResponsePayload, PromptPayload, SeededClaimId } from "./events/schema";
+import type { AiResponsePayload, PromptPayload, ReplySource, SeededClaimId } from "./events/schema";
 import { churnMealkit } from "./scenarios/churn-mealkit";
 import { SIM_DURATION_MS } from "./sim-config";
 import { buildVariant } from "./variant";
@@ -28,6 +28,7 @@ export async function createSimAttempt(anonId: string): Promise<string> {
     trapId: "T1",
     trapAttempted: "T1",
     exposed: true,
+    source: "template",
   };
 
   const db = getDb();
@@ -55,7 +56,7 @@ export function remainingMs(attempt: Pick<Attempt, "startedAt">): number {
   return attempt.startedAt.getTime() + SIM_DURATION_MS - Date.now();
 }
 
-export type ChatMessage = ChatTurn & { id: string };
+export type ChatMessage = ChatTurn & { id: string; source?: ReplySource };
 
 export type ChatState = {
   /** The conversation so far, oldest first. */
@@ -92,7 +93,7 @@ export async function loadChat(attemptId: string): Promise<ChatState> {
       userMessageCount++;
     } else if (row.type === "ai_response") {
       const reply = row.payload as AiResponsePayload;
-      messages.push({ id: reply.messageId, role: "assistant", text: reply.text });
+      messages.push({ id: reply.messageId, role: "assistant", text: reply.text, source: reply.source });
       if (reply.trapAttempted) tries[reply.trapAttempted] = (tries[reply.trapAttempted] ?? 0) + 1;
       if (reply.trapId) shown.add(reply.trapId);
     } else {
