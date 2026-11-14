@@ -3,6 +3,7 @@ import { integrityNotes, type LoggedEvent } from "../integrity";
 import type { Variant } from "../scenarios/types";
 import {
   WEIGHTS,
+  flagStats,
   gradeCorrectness,
   gradeProcess,
   gradeTraps,
@@ -31,6 +32,7 @@ export function scoreAttempt(input: ScoringInput, rubric?: RubricCore | null): S
   const { variant, answer, events } = input;
 
   const traps = gradeTraps(variant, answer, events);
+  const flags = flagStats(events);
   const exposed = traps.filter((t) => t.exposed);
 
   // No claim was shown: AI judgment cannot be assessed, so its 30 points move
@@ -46,6 +48,9 @@ export function scoreAttempt(input: ScoringInput, rubric?: RubricCore | null): S
     max: noneExposed ? 0 : WEIGHTS.aiJudgment,
     exposed: exposed.length,
     caught: exposed.filter((t) => t.outcome !== "missed").length,
+    flags: flags.flags,
+    falseFlags: flags.falseFlags,
+    flagPrecision: Math.round(flags.precision * 100) / 100,
   };
   const process = gradeProcess(answer, events);
 
@@ -64,6 +69,11 @@ export function scoreAttempt(input: ScoringInput, rubric?: RubricCore | null): S
 
   const total = Math.round(correctness.score + aiJudgment.score + reasoningScore + process.score);
   const notes = integrityNotes(events);
+  if (flags.falseFlags > 0) {
+    notes.push(
+      `Flagged ${flags.falseFlags} correct ${flags.falseFlags === 1 ? "answer" : "answers"} as wrong (${flags.flags} flagged in total); this reduced the credit for flags.`,
+    );
+  }
   if (capped) notes.push("The written answers contain text addressed to the grader; it was ignored.");
 
   return {

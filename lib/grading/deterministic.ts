@@ -15,7 +15,12 @@ const Q1_POINTS = 20;
 const Q2_POINTS = 15;
 /** Q1 is right within ±0.3 percentage points. */
 export const Q1_TOLERANCE_PP = 0.3;
-/** Per exposed claim: 60% for an answer that does not rely on it, 40% for flagging it. */
+/**
+ * Per exposed claim: 60% for an answer that does not rely on it, 40% for
+ * flagging it. The flag share is multiplied by flag precision (flags on
+ * messages that carried a seeded claim ÷ all flags), so flagging every reply
+ * is worth much less than flagging the right ones.
+ */
 const AVOIDED_SHARE = 0.6;
 const FLAGGED_SHARE = 0.4;
 
@@ -30,6 +35,27 @@ export function levelFor(total: number): Level {
 function citesBenchmark(text: string, benchmarkPct: number): boolean {
   const number = new RegExp(`(^|[^\\d.])${benchmarkPct}(\\.0)?\\s?(%|percent)`, "i");
   return number.test(text) || /industry|benchmark/i.test(text);
+}
+
+export type FlagStats = { flags: number; falseFlags: number; precision: number };
+
+/** How many distinct copilot messages were flagged, and how many of those carried no seeded claim. */
+export function flagStats(events: readonly LoggedEvent[]): FlagStats {
+  const claimMessages = new Set<string>();
+  for (const e of events) {
+    if (e.type !== "ai_response") continue;
+    const reply = e.payload as AiResponsePayload;
+    if (reply.trapId) claimMessages.add(reply.messageId);
+  }
+  const flagged = new Set(
+    events.filter((e) => e.type === "flag").map((e) => (e.payload as { messageId: string }).messageId),
+  );
+  const onClaims = [...flagged].filter((id) => claimMessages.has(id)).length;
+  return {
+    flags: flagged.size,
+    falseFlags: flagged.size - onClaims,
+    precision: flagged.size === 0 ? 1 : onClaims / flagged.size,
+  };
 }
 
 export function gradeTraps(variant: Variant, answer: Answer, events: readonly LoggedEvent[]): TrapResult[] {
@@ -59,6 +85,7 @@ export function gradeTraps(variant: Variant, answer: Answer, events: readonly Lo
     T3: `${truth.drivingChannel} had the largest churn-rate increase.`,
   };
 
+  const { precision } = flagStats(events);
   const exposedCount = shownIn.size;
   const max = exposedCount === 0 ? 0 : WEIGHTS.aiJudgment / exposedCount;
 
@@ -83,7 +110,7 @@ export function gradeTraps(variant: Variant, answer: Answer, events: readonly Lo
       flagged,
       avoided: exposed && avoided[id],
       outcome,
-      points: exposed ? round1(max * ((avoided[id] ? AVOIDED_SHARE : 0) + (flagged ? FLAGGED_SHARE : 0))) : 0,
+      points: exposed ? round1(max * ((avoided[id] ? AVOIDED_SHARE : 0) + (flagged ? FLAGGED_SHARE * precision : 0))) : 0,
       max: exposed ? round1(max) : 0,
     };
   });
@@ -108,7 +135,11 @@ export function gradeCorrectness(
 export function gradeProcess(answer: Answer, events: readonly LoggedEvent[]): Score["dimensions"]["process"] {
   const submit = events.find((e) => e.type === "submit")?.payload as SubmitPayload | undefined;
   const checks = {
-    inspectedData: events.some((e) => e.type === "data_view"),
+    // Sorting, filtering or downloading: something the candidate did. The
+    // automatic "table came into view" event does not count.
+    inspectedData: events.some(
+      (e) => e.type === "data_view" && (e.payload as { action?: string } | null)?.action !== "view",
+    ),
     usedCopilot: events.some((e) => e.type === "prompt"),
     questionedAi: events.some((e) => e.type === "flag") || answer.q4.trim().length >= 20,
     withinTime: submit !== undefined && submit.overtimeSec === 0,

@@ -1,5 +1,4 @@
 import "server-only";
-import type { LaterClaimId } from "./copilot";
 import { formatCount, formatPct } from "./format";
 import { churnPct, sum } from "./scenarios/metrics";
 import type { DatasetRow, Variant } from "./scenarios/types";
@@ -10,13 +9,12 @@ import type { DatasetRow, Variant } from "./scenarios/types";
  *
  * It is keyword-routed, not intelligent, and the UI labels every one of its
  * replies "Offline copilot". It answers from the same correct aggregates the
- * LLM is given, and it delivers the same seeded claims under the same rules,
- * so an attempt is graded identically whichever copilot answered.
+ * candidate has. The seeded claim sentences are not its business: the copilot
+ * route streams those first, the same way for both copilots, so an attempt is
+ * graded identically whichever one answered.
  */
-export function offlineReply(variant: Variant, message: string, claim: LaterClaimId | null): string {
-  const answer = route(variant, message);
-  // The seeded claim is appended verbatim, so it is always verifiably shown.
-  return claim ? `${answer}\n\n${variant.traps[claim].wrongClaim}` : answer;
+export function offlineReply(variant: Variant, message: string): string {
+  return route(variant, message);
 }
 
 const SEP = "2026-09";

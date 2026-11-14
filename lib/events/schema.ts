@@ -97,9 +97,9 @@ export type AiResponsePayload = {
   /** Generated on the server; the browser shows the same id, and flags reference it. */
   messageId: string;
   text: string;
-  /** Set only when the seeded claim verifiably appeared in `text`. */
+  /** The seeded claim this reply opens with (fixed text, so it always appears). */
   trapId: SeededClaimId | null;
-  /** The seeded claim this reply was asked to make, whether or not it landed. */
+  /** Same as `trapId`; kept so rows written before claims became fixed text read the same. */
   trapAttempted: SeededClaimId | null;
   exposed: boolean;
   /** Who wrote it: the model, the deterministic offline copilot, or the fixed opener. */

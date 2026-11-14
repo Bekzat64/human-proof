@@ -7,7 +7,7 @@ import { getOwnedSimAttempt, loadChat, newMessageId } from "@/lib/attempts";
 import {
   COPILOT_MAX_OUTPUT_TOKENS,
   buildInstructions,
-  claimAppears,
+  claimSentence,
   pickClaim,
   toModelMessages,
 } from "@/lib/copilot";
@@ -42,8 +42,9 @@ const limitReached = () =>
  *
  * The reply comes from the configured LLM when there is one, and from the
  * deterministic offline copilot otherwise (no key, provider error, or no
- * first token within 8s). Either way the same claim rules, logging and
- * server-generated message ids apply, and the reply is labelled with its source.
+ * first token within 8s). A seeded claim is always the same fixed sentence,
+ * streamed before either of them writes anything, and the same logging and
+ * server-generated message ids apply. The reply is labelled with its source.
  */
 export async function POST(request: Request): Promise<Response> {
   const parsed = bodySchema.safeParse(await readJson(request));
@@ -99,6 +100,12 @@ export async function POST(request: Request): Promise<Response> {
         writer.write({ type: "text-delta", id: textId, delta });
       };
 
+      // A seeded claim is fixed text, streamed first. Whoever answers next
+      // (model or offline copilot) only continues after it.
+      const opening = claim ? claimSentence(variant, claim) : null;
+      if (opening) emit(`${opening}\n\n`);
+      const openingLength = reply.length;
+
       let source: ReplySource = "offline";
       if (isLlmAvailable()) {
         const abort = new AbortController();
@@ -106,7 +113,7 @@ export async function POST(request: Request): Promise<Response> {
         try {
           const result = streamText({
             model: getModel("copilot"),
-            instructions: buildInstructions(variant, claim),
+            instructions: buildInstructions(variant.publicData, opening),
             messages: toModelMessages(chat.messages, text),
             maxOutputTokens: COPILOT_MAX_OUTPUT_TOKENS,
             reasoning: "none", // short, fast replies; the cap above is for visible text
@@ -117,24 +124,22 @@ export async function POST(request: Request): Promise<Response> {
             clearTimeout(timer); // the model is answering: let it finish
             emit(delta);
           }
-          if (reply.trim() !== "") source = "llm";
         } catch (error) {
           console.error("copilot model failed", { attemptId: attempt.id, error });
-          if (reply.trim() !== "") source = "llm"; // keep what was already shown
         } finally {
           clearTimeout(timer);
         }
+        // Anything the model wrote stays, even if it then failed mid-reply.
+        if (reply.slice(openingLength).trim() !== "") source = "llm";
       }
-      if (source === "offline") emit(offlineReply(variant, text, claim));
+      if (source === "offline") emit(offlineReply(variant, text));
 
-      // Record the claim as shown only if it verifiably made it into the reply.
-      const exposed = claim !== null && claimAppears(variant, claim, reply);
       const logged: AiResponsePayload = {
         messageId,
         text: reply,
-        trapId: exposed ? claim : null,
+        trapId: claim,
         trapAttempted: claim,
-        exposed,
+        exposed: claim !== null,
         source,
       };
       await db.insert(events).values({ attemptId: attempt.id, type: "ai_response", payload: logged });

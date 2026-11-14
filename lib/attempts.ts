@@ -83,7 +83,6 @@ export async function loadChat(attemptId: string): Promise<ChatState> {
   const messages: ChatMessage[] = [];
   const flags: Record<string, string> = {};
   const shown = new Set<SeededClaimId>();
-  const tries: Partial<Record<SeededClaimId, number>> = {};
   let userMessageCount = 0;
 
   for (const row of rows) {
@@ -94,7 +93,6 @@ export async function loadChat(attemptId: string): Promise<ChatState> {
     } else if (row.type === "ai_response") {
       const reply = row.payload as AiResponsePayload;
       messages.push({ id: reply.messageId, role: "assistant", text: reply.text, source: reply.source });
-      if (reply.trapAttempted) tries[reply.trapAttempted] = (tries[reply.trapAttempted] ?? 0) + 1;
       if (reply.trapId) shown.add(reply.trapId);
     } else {
       const { messageId, note } = row.payload as { messageId: string; note: string };
@@ -102,5 +100,5 @@ export async function loadChat(attemptId: string): Promise<ChatState> {
     }
   }
 
-  return { messages, flags, userMessageCount, claims: { shown, tries } };
+  return { messages, flags, userMessageCount, claims: { shown } };
 }

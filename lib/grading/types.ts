@@ -63,7 +63,18 @@ export type Score = {
       q1: { correct: boolean; answer: number; truth: number; points: number; max: number };
       q2: { correct: boolean; answer: Channel; truth: Channel; points: number; max: number };
     };
-    aiJudgment: { score: number; max: number; exposed: number; caught: number };
+    aiJudgment: {
+      score: number;
+      max: number;
+      exposed: number;
+      caught: number;
+      /** Distinct copilot messages flagged. Absent on scores stored before flag precision. */
+      flags?: number;
+      /** Flagged messages that carried no seeded claim. */
+      falseFlags?: number;
+      /** Flags on seeded claims ÷ all flags (1 when nothing was flagged). Scales the flag credit. */
+      flagPrecision?: number;
+    };
     reasoning: { score: number; max: number } & Rubric & {
         /** True when grader-directed text was found and the rubric was capped. */
         capped: boolean;

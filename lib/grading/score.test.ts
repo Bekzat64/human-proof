@@ -13,15 +13,20 @@ const reply = (messageId: string, trapId: "T1" | "T2" | "T3" | null) =>
   event("ai_response", { messageId, text: "…", trapId, trapAttempted: trapId, exposed: trapId !== null, source: "offline" });
 
 /** A normal session: all three claims shown, data inspected, submitted on time. */
-function session(options: { flags?: string[]; shown?: ("T1" | "T2" | "T3")[] } = {}): LoggedEvent[] {
+function session(
+  options: { flags?: string[]; shown?: ("T1" | "T2" | "T3")[]; dataAction?: string; plainReplies?: number } = {},
+): LoggedEvent[] {
   const shown = options.shown ?? ["T1", "T2", "T3"];
   return [
     reply("m1", shown.includes("T1") ? "T1" : null),
     event("data_view", { action: "view" }),
+    event("data_view", { action: options.dataAction ?? "sort", column: "cancellations", direction: "desc" }),
     event("prompt", { messageId: "u1", text: "is this normal?" }),
     reply("m2", shown.includes("T2") ? "T2" : null),
     event("prompt", { messageId: "u2", text: "which channel?" }),
     reply("m3", shown.includes("T3") ? "T3" : null),
+    // Further copilot replies that carry no seeded claim: p1, p2, …
+    ...Array.from({ length: options.plainReplies ?? 0 }, (_, i) => reply(`p${i + 1}`, null)),
     ...(options.flags ?? []).map((messageId) => event("flag", { messageId, note: "this is wrong" })),
     event("submit", { elapsedSec: 600, overtimeSec: 0 }),
   ];
@@ -68,6 +73,37 @@ describe("scoring v1", () => {
     expect(score.traps.map((t) => t.points)).toEqual([4, 4, 4]); // 40% of 10 each
     expect(score.dimensions.aiJudgment.score).toBe(12);
     expect(score.dimensions.correctness.score).toBe(0);
+  });
+
+  it("3c. flagging everything earns materially less than flagging precisely", () => {
+    const plainReplies = 3;
+    const precise = scoreAttempt({ variant, answer: follower, events: session({ plainReplies, flags: ["m1", "m2", "m3"] }) });
+    const everything = scoreAttempt({
+      variant,
+      answer: follower,
+      events: session({ plainReplies, flags: ["m1", "m2", "m3", "p1", "p2", "p3"] }),
+    });
+
+    expect(precise.dimensions.aiJudgment).toMatchObject({ score: 12, flags: 3, falseFlags: 0, flagPrecision: 1 });
+    expect(everything.dimensions.aiJudgment).toMatchObject({ score: 6, flags: 6, falseFlags: 3, flagPrecision: 0.5 });
+    expect(everything.traps.map((t) => t.points)).toEqual([2, 2, 2]); // 40% × precision 0.5 of 10 each
+    expect(everything.total).toBeLessThan(precise.total);
+    expect(everything.integrityNotes.join(" ")).toContain("Flagged 3 correct answers as wrong");
+    expect(precise.integrityNotes.join(" ")).not.toContain("correct answer");
+
+    // The answer share is untouched by precision: only the flag credit shrinks.
+    const careful = scoreAttempt({ variant, answer: perfect, events: session({ plainReplies, flags: ["m1", "p1"] }) });
+    expect(careful.traps.map((t) => t.points)).toEqual([8, 6, 6]); // T1: 6 + 4 × 0.5
+  });
+
+  it("3d. only a sort, filter or download counts as inspecting the data", () => {
+    const viewedOnly = scoreAttempt({ variant, answer: perfect, events: session({ dataAction: "view" }) });
+    expect(viewedOnly.dimensions.process.checks.inspectedData).toBe(false);
+    expect(viewedOnly.dimensions.process.score).toBe(7);
+    for (const dataAction of ["sort", "filter", "download"]) {
+      const score = scoreAttempt({ variant, answer: perfect, events: session({ dataAction }) });
+      expect(score.dimensions.process.checks.inspectedData, dataAction).toBe(true);
+    }
   });
 
   it("3b. T2: citing the benchmark while verifying (Q4) counts as questioning it", () => {
