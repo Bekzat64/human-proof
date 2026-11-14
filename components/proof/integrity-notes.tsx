@@ -14,8 +14,8 @@ export function IntegrityNotes({ notes }: { notes: string[] }) {
         ))}
       </ul>
       <p className="text-xs leading-relaxed text-muted-foreground">
-        These are observations from the session log, shown for context. None of them changes the score, and
-        none is a finding of wrongdoing: there are ordinary explanations for each.
+        These are observations from the session log, shown for context. None is a finding of wrongdoing:
+        there are ordinary explanations for each.
       </p>
     </div>
   );
