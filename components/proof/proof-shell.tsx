@@ -46,7 +46,7 @@ export function ProofShell({
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-20 px-6 pt-14 pb-24">{children}</main>
       <footer className="mx-auto w-full max-w-3xl border-t px-6 py-8 text-xs leading-relaxed text-muted-foreground">
         HUMAN PROOF is a 15-minute analyst work simulation. The AI copilot in it is deliberately seeded
-        with mistakes; this page records which ones were caught. No account is involved: a proof is
+        with mistakes; each proof records which ones were caught. No account is involved: a proof is
         tied to the browser that took the simulation.
         <nav className="flex gap-5 pt-4">
           <Link href="/stats" className="hover:text-foreground">
