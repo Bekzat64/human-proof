@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
+import { DrillProof } from "@/components/drill/drill-proof";
 import { DimensionBars } from "@/components/proof/dimension-bars";
 import { GradingPoller } from "@/components/proof/grading-poller";
 import { ProofHero } from "@/components/proof/hero";
@@ -11,6 +12,7 @@ import { ReplayTimeline } from "@/components/proof/replay-timeline";
 import { ShareBar } from "@/components/proof/share-bar";
 import { TrapCards } from "@/components/proof/trap-cards";
 import { Button } from "@/components/ui/button";
+import type { DrillScore } from "@/lib/drill/types";
 import type { Score } from "@/lib/grading/types";
 import { hasActivePass } from "@/lib/pass";
 import { standingFor } from "@/lib/percentile";
@@ -29,8 +31,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { attemptId } = await params;
   const attempt = await getProofAttempt(attemptId);
   // Nothing about an ungraded or unknown attempt leaks into the page title.
-  if (!attempt || attempt.kind !== "sim" || attempt.status !== "graded" || !attempt.score) {
+  if (!attempt || attempt.status !== "graded" || !attempt.score) {
     return { title: "Proof", robots: { index: false } };
+  }
+  if (attempt.kind === "drill") {
+    const drill = attempt.score as DrillScore;
+    const title = `Spot the AI error · ${drill.correct}/${drill.items.length}${drill.countsForStreak && drill.streak > 1 ? ` · ${drill.streak}-day streak` : ""}`;
+    const description = `Spotted ${drill.correct} of ${drill.items.length} planted errors in AI answers in today's 3-minute drill. Can you beat it?`;
+    return {
+      metadataBase: new URL(await getBaseUrl()),
+      title,
+      description,
+      openGraph: { title: `${title} · HUMAN PROOF`, description, type: "website", url: `/p/${attempt.id}` },
+      twitter: { card: "summary_large_image", title: `${title} · HUMAN PROOF`, description },
+    };
   }
   const score = attempt.score as Score;
   const { exposed, caught } = score.dimensions.aiJudgment;
@@ -54,8 +68,20 @@ export default async function ProofPage({ params }: Props) {
   const access = await loadProof(attemptId);
   if (access.kind === "not_found") notFound();
 
+  if (access.kind === "drill") {
+    return (
+      <DrillProof
+        attempt={access.attempt}
+        score={access.score}
+        isOwner={access.isOwner}
+        proofUrl={`${await getBaseUrl()}/p/${access.attempt.id}`}
+      />
+    );
+  }
+
   if (access.kind === "pending") {
     const { attempt } = access;
+    if (attempt.kind === "drill") redirect(`/drill/${attempt.id}`);
     return (
       <ProofShell>
         <section className="flex flex-col items-start gap-5 rounded-xl border bg-card p-8">

@@ -1,4 +1,5 @@
 import { FileCheck2, Flag, Table2 } from "lucide-react";
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,12 @@ export default function Home() {
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6">
       <header className="flex items-center justify-between py-6">
         <span className="text-sm font-semibold tracking-[0.2em]">HUMAN PROOF</span>
-        <Badge variant="outline">Preview build</Badge>
+        <div className="flex items-center gap-3">
+          <Link href="/me" className="text-sm text-muted-foreground hover:text-foreground">
+            My proofs
+          </Link>
+          <Badge variant="outline">Preview build</Badge>
+        </div>
       </header>
 
       <main className="flex flex-1 flex-col justify-center gap-12 py-12">
@@ -50,6 +56,9 @@ export default function Home() {
                 Start the 15-minute simulation
               </Button>
             </form>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/drill">Try the 3-minute drill</Link>
+            </Button>
             <span className="text-sm text-muted-foreground">No sign-up. No login.</span>
           </div>
         </section>

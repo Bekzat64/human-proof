@@ -15,8 +15,9 @@ export function ShareBar({
   fileName,
 }: {
   proofUrl: string;
-  linkedInUrl: string;
-  resumeLine: string;
+  /** Omitted for a drill proof, which is not a credential. */
+  linkedInUrl?: string;
+  resumeLine?: string;
   imageUrl: string;
   fileName: string;
 }) {
@@ -73,14 +74,18 @@ export function ShareBar({
         <Button size="lg" onClick={() => copy(proofUrl, "Link copied")}>
           <Link2 aria-hidden /> Copy link
         </Button>
-        <Button size="lg" variant="outline" asChild>
-          <a href={linkedInUrl} target="_blank" rel="noopener noreferrer">
-            <ExternalLink aria-hidden /> Add to LinkedIn
-          </a>
-        </Button>
-        <Button size="lg" variant="outline" onClick={() => copy(resumeLine, "Resume line copied")}>
-          <ScrollText aria-hidden /> Copy resume line
-        </Button>
+        {linkedInUrl && (
+          <Button size="lg" variant="outline" asChild>
+            <a href={linkedInUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink aria-hidden /> Add to LinkedIn
+            </a>
+          </Button>
+        )}
+        {resumeLine && (
+          <Button size="lg" variant="outline" onClick={() => copy(resumeLine, "Resume line copied")}>
+            <ScrollText aria-hidden /> Copy resume line
+          </Button>
+        )}
         <Button size="lg" variant="outline" disabled={busy} onClick={shareImage}>
           <ImageDown aria-hidden /> {busy ? "Preparing image…" : "Download / share image"}
         </Button>
@@ -92,7 +97,9 @@ export function ShareBar({
           </span>
         )}
         {status.kind === "error" && <span className="text-destructive">{status.message}</span>}
-        {status.kind === "idle" && <span className="font-mono text-xs break-all text-muted-foreground">{resumeLine}</span>}
+        {status.kind === "idle" && resumeLine && (
+          <span className="font-mono text-xs break-all text-muted-foreground">{resumeLine}</span>
+        )}
       </p>
     </section>
   );

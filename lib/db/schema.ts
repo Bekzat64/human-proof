@@ -26,6 +26,7 @@ export const EVENT_TYPES = [
   "answer_edit",
   "data_view",
   "submit",
+  "drill_answer",
 ] as const;
 export const FEEDBACK_SOURCES = ["employer", "candidate"] as const;
 export const PASS_STATUSES = ["active"] as const;
@@ -84,7 +85,7 @@ export const feedback = pgTable(
   },
   (t) => [
     index("feedback_attempt_idx").on(t.attemptId),
-    uniqueIndex("feedback_once_idx").on(t.attemptId, t.source, t.anonId),
+    uniqueIndex("feedback_once_idx").on(t.attemptId, t.source, t.anonId, t.kind),
   ],
 );
 

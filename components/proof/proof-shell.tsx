@@ -27,6 +27,14 @@ export function ProofShell({
         <Link href="/" className="text-xs font-semibold tracking-[0.28em] text-foreground/90 hover:text-foreground">
           HUMAN PROOF
         </Link>
+        <nav className="flex items-center gap-5 text-sm text-muted-foreground">
+          <Link href="/drill" className="hover:text-foreground">
+            Drill
+          </Link>
+          <Link href="/me" className="hover:text-foreground">
+            My proofs
+          </Link>
+        </nav>
         {demo && (
           <span className="rounded-full border border-destructive/60 px-3 py-1 text-xs font-medium tracking-wide text-destructive">
             DEMO — not a real candidate

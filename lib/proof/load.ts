@@ -5,6 +5,7 @@ import { getAnonId } from "../anon";
 import { getAttempt } from "../attempts";
 import { getDb } from "../db";
 import { events, feedback, type Attempt } from "../db/schema";
+import type { DrillScore } from "../drill/types";
 import type { Score } from "../grading/types";
 import type { LoggedEvent } from "../integrity";
 
@@ -15,7 +16,9 @@ export type ProofAccess =
   | { kind: "not_found" }
   /** The owner's own attempt that has no score yet. */
   | { kind: "pending"; attempt: Attempt }
-  | { kind: "graded"; attempt: Attempt; score: Score; isOwner: boolean; anonId: string | null };
+  | { kind: "graded"; attempt: Attempt; score: Score; isOwner: boolean; anonId: string | null }
+  /** A completed daily drill: public, with its own layout. */
+  | { kind: "drill"; attempt: Attempt; score: DrillScore; isOwner: boolean };
 
 /**
  * Who may see what. A graded proof is public. Anything else exists only for
@@ -23,8 +26,14 @@ export type ProofAccess =
  */
 export async function loadProof(attemptId: string): Promise<ProofAccess> {
   const [attempt, anonId] = await Promise.all([getProofAttempt(attemptId), getAnonId()]);
-  if (!attempt || attempt.kind !== "sim") return { kind: "not_found" };
+  if (!attempt) return { kind: "not_found" };
   const isOwner = anonId !== null && attempt.anonId === anonId;
+  if (attempt.kind === "drill") {
+    if (attempt.status === "graded" && attempt.score) {
+      return { kind: "drill", attempt, score: attempt.score as DrillScore, isOwner };
+    }
+    return isOwner ? { kind: "pending", attempt } : { kind: "not_found" };
+  }
   if (attempt.status === "graded" && attempt.score) {
     return { kind: "graded", attempt, score: attempt.score as Score, isOwner, anonId };
   }

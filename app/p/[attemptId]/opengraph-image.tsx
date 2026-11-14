@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import type { DrillScore } from "@/lib/drill/types";
 import type { Score } from "@/lib/grading/types";
 import { getProofAttempt } from "@/lib/proof/load";
 import { CREDENTIAL_NAME } from "@/lib/proof/share";
@@ -16,9 +17,10 @@ const MUTED = "#9aa3bd";
 export default async function Image({ params }: { params: Promise<{ attemptId: string }> }) {
   const { attemptId } = await params;
   const attempt = await getProofAttempt(attemptId);
-  const graded = attempt && attempt.kind === "sim" && attempt.status === "graded" && attempt.score;
-  const score = graded ? (attempt.score as Score) : null;
+  const graded = attempt && attempt.status === "graded" && attempt.score;
   const host = (await getBaseUrl()).replace(/^https?:\/\//, "");
+  if (graded && attempt.kind === "drill") return drillImage(attempt.score as DrillScore, `${host}/p/${attemptId}`);
+  const score = graded && attempt.kind === "sim" ? (attempt.score as Score) : null;
 
   return new ImageResponse(
     (
@@ -72,6 +74,49 @@ export default async function Image({ params }: { params: Promise<{ attemptId: s
 
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 28, color: MUTED }}>
           <div style={{ display: "flex" }}>{score ? `Verify: ${host}/p/${attemptId}` : host}</div>
+        </div>
+      </div>
+    ),
+    size,
+  );
+}
+
+function drillImage(score: DrillScore, url: string) {
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          background: NAVY,
+          color: "#f4f5fa",
+          padding: "64px 72px",
+          borderTop: `10px solid ${VIOLET}`,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", fontSize: 30, fontWeight: 700, letterSpacing: 10 }}>HUMAN PROOF</div>
+          <div style={{ display: "flex", fontSize: 24, color: MUTED }}>Daily drill · {score.date}</div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", fontSize: 104, lineHeight: 1.05, letterSpacing: -3 }}>Spot the AI error</div>
+          <div style={{ display: "flex", alignItems: "baseline", marginTop: 24 }}>
+            <div style={{ display: "flex", fontSize: 150, fontWeight: 700, lineHeight: 1 }}>
+              {score.correct}/{score.items.length}
+            </div>
+            {score.countsForStreak && score.streak > 0 && (
+              <div style={{ display: "flex", fontSize: 48, color: VIOLET, marginLeft: 36 }}>
+                {`${score.streak}-day streak`}
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 28, color: MUTED }}>
+          <div style={{ display: "flex" }}>{url}</div>
+          <div style={{ display: "flex", color: VIOLET }}>{"Try today's drill →"}</div>
         </div>
       </div>
     ),
