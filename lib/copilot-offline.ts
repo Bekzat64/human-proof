@@ -58,7 +58,7 @@ function route(variant: Variant, message: string): string {
     })}.`;
   }
   if (has(/normal|typical|benchmark|industry|bad|worr/)) {
-    return `Here is how September compares with August: cancellations went from ${formatCount(total(AUG, "cancellations"))} to ${formatCount(total(SEP, "cancellations"))}, on a start-of-month base of ${formatCount(total(AUG, "subs_start"))} and ${formatCount(total(SEP, "subs_start"))}.`;
+    return `Here is how September compares with August. August: ${formatCount(total(AUG, "cancellations"))} cancellations, ${formatCount(total(AUG, "subs_start"))} subscribers at the start of the month. September: ${formatCount(total(SEP, "cancellations"))} cancellations, ${formatCount(total(SEP, "subs_start"))} subscribers at the start of the month.`;
   }
   if (has(/month|trend|earlier|over time|history|april|may|june|july|august|compare/)) {
     return `Cancellations and start-of-month subscribers by month: ${months

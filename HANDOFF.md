@@ -35,7 +35,7 @@ Next.js 16 App Router (`proxy.ts`, not `middleware.ts`; **Cache Components OFF**
 - Flags on LLM-written non-trap replies are neutral ("Flagged N other replies"); hard false-flag wording applies only to offline replies.
 
 ## Open issues / known risks
-1. **LLM key missing.** The jury criterion is "core value is real, not faked". When a key arrives: set it in Vercel (+ `LLM_PROVIDER`, model IDs) → redeploy → run 5 trials of the copilot → `pnpm regrade --heuristic-only` → check that the "estimated" tags disappear on new proofs.
+1. **LLM key missing.** The jury criterion is "core value is real, not faked". When a key arrives: set it in Vercel and `.env.local` (+ `LLM_PROVIDER`, optional model IDs) → `pnpm llm:check` until it prints "all checks passed" (run it a few times: it is the 5-trial reliability check) → `vercel deploy --prod` → `pnpm regrade --heuristic-only` → check that the "estimated" tags disappear on new proofs.
 2. **Flag spam in LLM mode** (fix in Stage 6, see below).
 3. Daily drill items are the same for everyone, so answers can leak. Accepted: drills are practice and do not prove anything; only the first on-time drill counts toward the streak.
 4. Anonymous employer feedback can be repeated by clearing cookies. Label it "unverified" everywhere.

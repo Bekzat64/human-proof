@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const score = attempt.score as Score;
   return {
     metadataBase: new URL(await getBaseUrl()),
-    title: `Employer view — ${score.level} · ${score.total}/100`,
+    title: `Employer view — ${score.level} · ${score.total}/100${attempt.isDemo ? " (DEMO)" : ""}`,
     description: verdictLine(score),
     // A working page for one reader, not something to index.
     robots: { index: false },

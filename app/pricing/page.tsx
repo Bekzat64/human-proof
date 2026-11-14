@@ -52,6 +52,9 @@ async function PricingContent({ searchParams }: Props) {
             free.
           </p>
           <div className="flex flex-wrap gap-3 pt-1">
+            <form action="/api/checkout" method="post">
+              <Button type="submit">Get the pass — $19 / 7 days</Button>
+            </form>
             <Button asChild variant="outline">
               <Link href="/drill">Take today&apos;s drill instead</Link>
             </Button>

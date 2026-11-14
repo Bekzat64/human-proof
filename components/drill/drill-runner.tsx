@@ -89,6 +89,8 @@ export function DrillRunner({
       if (!response.ok) throw new Error(await errorMessageFrom(response, "Your drill could not be submitted."));
       router.replace(`/drill/${attemptId}`);
       router.refresh();
+      // Same URL, so the router keeps the scroll position: start the result at its headline.
+      window.scrollTo({ top: 0 });
     } catch (e) {
       submitted.current = false;
       setPending(false);

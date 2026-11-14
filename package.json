@@ -12,7 +12,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "regrade": "tsx --conditions=react-server scripts/regrade.ts",
-    "seed:demo": "tsx --conditions=react-server scripts/seed-demo.ts"
+    "seed:demo": "tsx --conditions=react-server scripts/seed-demo.ts",
+    "llm:check": "tsx --conditions=react-server scripts/llm-check.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.105",

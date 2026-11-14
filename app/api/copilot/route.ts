@@ -1,28 +1,18 @@
-import { createUIMessageStream, createUIMessageStreamResponse, streamText } from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { and, count, eq, lte } from "drizzle-orm";
 import { z } from "zod";
 import { getAnonId } from "@/lib/anon";
 import { jsonError, readJson } from "@/lib/api";
 import { getOwnedSimAttempt, loadChat, newMessageId } from "@/lib/attempts";
-import {
-  COPILOT_MAX_OUTPUT_TOKENS,
-  buildInstructions,
-  claimSentence,
-  pickClaim,
-  toModelMessages,
-} from "@/lib/copilot";
-import { offlineReply } from "@/lib/copilot-offline";
+import { pickClaim } from "@/lib/copilot";
+import { writeCopilotReply } from "@/lib/copilot-reply";
 import { getDb } from "@/lib/db";
 import { events } from "@/lib/db/schema";
-import type { AiResponsePayload, PromptPayload, ReplySource } from "@/lib/events/schema";
-import { getModel, isLlmAvailable } from "@/lib/llm";
+import type { AiResponsePayload, PromptPayload } from "@/lib/events/schema";
 import { MAX_MESSAGE_CHARS, MAX_USER_MESSAGES } from "@/lib/sim-config";
 import { buildVariant } from "@/lib/variant";
 
 export const maxDuration = 30;
-
-/** If the model has not started answering by then, the offline copilot answers instead. */
-const FIRST_TOKEN_TIMEOUT_MS = 8000;
 
 const bodySchema = z.strictObject({
   attemptId: z.string().min(1).max(64),
@@ -94,45 +84,14 @@ export async function POST(request: Request): Promise<Response> {
       writer.write({ type: "start", messageId });
       writer.write({ type: "text-start", id: textId });
 
-      let reply = "";
-      const emit = (delta: string) => {
-        reply += delta;
-        writer.write({ type: "text-delta", id: textId, delta });
-      };
-
-      // A seeded claim is fixed text, streamed first. Whoever answers next
-      // (model or offline copilot) only continues after it.
-      const opening = claim ? claimSentence(variant, claim) : null;
-      if (opening) emit(`${opening}\n\n`);
-      const openingLength = reply.length;
-
-      let source: ReplySource = "offline";
-      if (isLlmAvailable()) {
-        const abort = new AbortController();
-        const timer = setTimeout(() => abort.abort(), FIRST_TOKEN_TIMEOUT_MS);
-        try {
-          const result = streamText({
-            model: getModel("copilot"),
-            instructions: buildInstructions(variant.publicData, opening),
-            messages: toModelMessages(chat.messages, text),
-            maxOutputTokens: COPILOT_MAX_OUTPUT_TOKENS,
-            reasoning: "none", // short, fast replies; the cap above is for visible text
-            abortSignal: abort.signal,
-            onError: ({ error }) => console.error("copilot model failed", { attemptId: attempt.id, error }),
-          });
-          for await (const delta of result.textStream) {
-            clearTimeout(timer); // the model is answering: let it finish
-            emit(delta);
-          }
-        } catch (error) {
-          console.error("copilot model failed", { attemptId: attempt.id, error });
-        } finally {
-          clearTimeout(timer);
-        }
-        // Anything the model wrote stays, even if it then failed mid-reply.
-        if (reply.slice(openingLength).trim() !== "") source = "llm";
-      }
-      if (source === "offline") emit(offlineReply(variant, text));
+      const { reply, source } = await writeCopilotReply({
+        variant,
+        claim,
+        message: text,
+        history: chat.messages,
+        emit: (delta) => writer.write({ type: "text-delta", id: textId, delta }),
+        onModelError: (error) => console.error("copilot model failed", { attemptId: attempt.id, error }),
+      });
 
       const logged: AiResponsePayload = {
         messageId,

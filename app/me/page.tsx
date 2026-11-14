@@ -90,8 +90,8 @@ async function MeContent() {
             {streak > 0 && <span aria-hidden>🔥 </span>}
             {streak} {streak === 1 ? "day" : "days"}
           </Stat>
-          <Stat label="Simulations">{gradedSims.length}</Stat>
-          <Stat label="Drills">{drills.length}</Stat>
+          <Stat label="Simulations completed">{gradedSims.length}</Stat>
+          <Stat label="Drills completed">{drills.length}</Stat>
         </dl>
       </section>
 

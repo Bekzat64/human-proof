@@ -148,19 +148,27 @@ export default async function ProofPage({ params }: Props) {
           </Link>
         </div>
       ) : (
-        <Link
-          href="/drill"
-          className="group flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-6 transition-colors hover:border-violet/60"
-        >
-          <span className="flex flex-col gap-1">
-            <span className="font-display text-2xl">Can you catch the AI&apos;s mistake?</span>
-            <span className="text-sm text-muted-foreground">No sign-up. Three minutes.</span>
-          </span>
-          <span className="flex items-center gap-1.5 text-sm font-medium text-violet">
-            Take the 3-minute drill
-            <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5" />
-          </span>
-        </Link>
+        <div className="flex flex-col gap-3">
+          <Link
+            href="/drill"
+            className="group flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-6 transition-colors hover:border-violet/60"
+          >
+            <span className="flex flex-col gap-1">
+              <span className="font-display text-2xl">Can you catch the AI&apos;s mistake?</span>
+              <span className="text-sm text-muted-foreground">No sign-up. Three minutes.</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-sm font-medium text-violet">
+              Take the 3-minute drill
+              <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </Link>
+          <Link
+            href={`/p/${attempt.id}/employer`}
+            className="flex items-center gap-1.5 self-start text-sm text-violet underline-offset-4 hover:underline"
+          >
+            Hiring? Open the employer view <ArrowRight aria-hidden className="size-4" />
+          </Link>
+        </div>
       )}
 
       <section className="flex flex-col gap-8">
@@ -192,11 +200,13 @@ export default async function ProofPage({ params }: Props) {
             <p className="text-sm leading-relaxed text-pretty">{reasoning.gap}</p>
           </div>
         </div>
-        <Button asChild size="lg" variant={isOwner ? "default" : "outline"} className="self-start">
-          <Link href="/drill">
-            Next: practice {PRACTICE_LABELS[reasoning.nextDrill] ?? "catching AI mistakes"} <ArrowRight aria-hidden />
-          </Link>
-        </Button>
+        {isOwner && (
+          <Button asChild size="lg" className="self-start">
+            <Link href="/drill">
+              Next: practice {PRACTICE_LABELS[reasoning.nextDrill] ?? "catching AI mistakes"} <ArrowRight aria-hidden />
+            </Link>
+          </Button>
+        )}
       </section>
 
       <section className="flex flex-col gap-8">

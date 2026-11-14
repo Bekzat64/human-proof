@@ -116,8 +116,14 @@ same fixed sentences in both modes, so grading is identical.
 
 Add a key and both switch over on the next request: set `LLM_PROVIDER` (`anthropic` | `google` |
 `openai`) and the matching key (`ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`,
-`OPENAI_API_KEY`), optionally `COPILOT_MODEL` / `GRADER_MODEL`, redeploy, then run
-`pnpm regrade --heuristic-only` to re-score earlier attempts with the model rubric.
+`OPENAI_API_KEY`), optionally `COPILOT_MODEL` / `GRADER_MODEL`, then:
+
+1. `pnpm llm:check`: one T2 and one T3 copilot turn through the same code as `/api/copilot`, plus
+   one grader call. Prints model IDs and latency, and checks that each seeded sentence streams first
+   and the model continues without giving the exercise away. Exits 0 with "no key" when none is set,
+   1 if any check fails.
+2. Redeploy (`vercel deploy --prod`).
+3. `pnpm regrade --heuristic-only` to re-score earlier attempts with the model rubric.
 
 ## Run locally
 
@@ -136,6 +142,7 @@ pnpm dev
 | `pnpm lint` · `pnpm typecheck` | ESLint · `tsc --noEmit` |
 | `pnpm db:push` · `pnpm db:studio` | Push the Drizzle schema · inspect data |
 | `pnpm seed:demo` | Create or re-create the 2 demo proofs (idempotent, `is_demo = true`) |
+| `pnpm llm:check` | LLM switch-on check: copilot (T2, T3) and grader calls, model IDs, latency |
 | `pnpm regrade --heuristic-only` | Re-score "estimated" rubrics once an LLM key exists |
 | `pnpm regrade --all` | Re-score every graded attempt with the current rules |
 

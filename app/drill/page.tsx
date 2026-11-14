@@ -11,7 +11,6 @@ import { getDb } from "@/lib/db";
 import { attempts } from "@/lib/db/schema";
 import { completedDrillDates, currentStreak } from "@/lib/drill/attempts";
 import { drillDateKey, scenarioIdForDate } from "@/lib/drill/daily";
-import { DRILL_ITEMS_PER_DAY } from "@/lib/drill/types";
 
 export const metadata: Metadata = {
   title: "Daily drill",
@@ -55,7 +54,7 @@ async function DrillContent() {
         </p>
         <h1 className="font-display text-5xl leading-tight text-balance sm:text-6xl">Spot the AI error</h1>
         <p className="max-w-xl text-pretty text-muted-foreground">
-          {DRILL_ITEMS_PER_DAY} short AI answers to an analyst&apos;s question, each with its data table. In each one,
+          Five short AI answers to analysts&apos; questions, each with its data table. In each one,
           click the sentence that is wrong and say why, or call it clean. Three minutes. Everyone gets the same set
           today; a new one starts at midnight New York time.
         </p>

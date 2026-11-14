@@ -9,6 +9,7 @@ import type { Variant } from "../scenarios/types";
 import type { Rubric } from "./types";
 
 const GRADER_TIMEOUT_MS = 20_000;
+const GRADER_MAX_OUTPUT_TOKENS = 1000;
 
 /** Candidate text cannot close its own data tag: angle brackets are neutralised. */
 const asData = (text: string) => text.replace(/</g, "‹").replace(/>/g, "›");
@@ -69,6 +70,8 @@ export async function llmRubric(
       instructions,
       prompt,
       output: Output.object({ schema: rubricSchema }),
+      // Five scores and two sentences: a small cap bounds cost and latency.
+      maxOutputTokens: GRADER_MAX_OUTPUT_TOKENS,
       abortSignal: AbortSignal.timeout(GRADER_TIMEOUT_MS),
       ...deterministicSampling(),
     });

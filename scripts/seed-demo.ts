@@ -82,7 +82,7 @@ const SCRIPTS: Script[] = [
       q1: traps.T1.trapValue,
       q2: traps.T3.trapValue,
       q3: `Churn is within the normal range for the industry (about ${traps.T2.trapValue}% for meal kits), so this is not a crisis. ${traps.T3.trapValue} had the most cancellations, so we should look at ${traps.T3.trapValue} acquisition quality next quarter.`,
-      q4: "Used the copilot's figures.",
+      q4: "Copilot numbers.",
     }),
   },
 ];
