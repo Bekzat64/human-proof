@@ -32,7 +32,7 @@ const PROVIDERS: Record<
   },
   google: {
     keyEnv: "GOOGLE_GENERATIVE_AI_API_KEY",
-    defaults: { copilot: "gemini-flash-latest", grader: "gemini-pro-latest" },
+    defaults: { copilot: "gemini-flash-lite-latest", grader: "gemini-flash-lite-latest" },
     model: (id) =>
       createGoogleGenerativeAI({ baseURL: "https://generativelanguage.googleapis.com/v1beta" })(id),
   },
